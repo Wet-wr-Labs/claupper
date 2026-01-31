@@ -1,0 +1,107 @@
+name: Claudebot
+
+on:
+  # Trigger on @claude mentions in issues and PRs
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+  # Trigger on new issues with 'claudebot' label
+  issues:
+    types: [labeled]
+  # Nightly scheduled run
+  schedule:
+    - cron: "0 6 * * *" # 6 AM UTC (midnight CST)
+  # Manual trigger
+  workflow_dispatch:
+    inputs:
+      prompt:
+        description: "Custom prompt for Claude"
+        required: false
+        type: string
+
+jobs:
+  # Respond to @claude mentions in comments
+  respond:
+    if: >
+      (github.event_name == 'issue_comment' || github.event_name == 'pull_request_review_comment')
+      && contains(github.event.comment.body, '@claude')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          max_turns: 20
+
+  # Auto-plan when issues get labeled 'claudebot'
+  plan-issue:
+    if: >
+      github.event_name == 'issues'
+      && github.event.label.name == 'claudebot'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          max_turns: 25
+          prompt: |
+            Analyze this issue and do the following:
+            1. Create a detailed implementation plan
+            2. If the plan is straightforward, implement it and open a PR
+            3. If it needs clarification, comment with questions and numbered options
+            Always comment your plan before making code changes.
+
+  # Nightly autonomous run
+  nightly:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          max_turns: 15
+          prompt: |
+            Nightly autonomous review:
+            1. Check all open issues — comment plans on any that are unplanned
+            2. Review any open PRs for issues
+            3. If there are issues labeled 'claudebot' without a PR, implement them
+            Summarize everything you did as a comment on the most recent issue.
+
+  # Manual trigger with custom prompt
+  manual:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          max_turns: 20
+          prompt: ${{ inputs.prompt }}
