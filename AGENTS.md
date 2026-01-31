@@ -1,16 +1,16 @@
-# Claude Remote — Flipper Zero FAP
+# Claupper — Flipper Zero FAP
 
 *By Kasen Sansonetti & the Wetware Labs team. [WetwareOfficial.com](https://WetwareOfficial.com)*
 
 ## Identity
 
-This is **Claude Remote**, a Flipper Zero FAP (Flipper Application Package) that turns the Flipper into:
+This is **Claupper**, a Flipper Zero FAP (Flipper Application Package) that turns the Flipper into:
 1. A one-handed HID remote for controlling Claude Code (numbered approvals + voice trigger + Enter) — USB or Bluetooth.
-2. An offline Claude Code manual browsable on the Flipper's 128x64 display.
+2. An offline Claude Code manual with folder navigation and quiz mode, browsable on the Flipper's 128x64 display.
 
 Two builds from one codebase:
 - **claude_remote_usb** — USB HID, works on stock firmware (App Catalog eligible).
-- **claude_remote_ble** — BLE HID, works on Momentum/Unleashed firmware (wireless).
+- **claude_remote_ble** (named "Claupper") — BLE HID, works on Momentum/Unleashed firmware (wireless). Primary build.
 
 Language: **C** (no C++). Build tool: **ufbt** or **fbt**. Target: external FAP (`FlipperAppType.EXTERNAL`).
 
@@ -22,6 +22,8 @@ Language: **C** (no C++). Build tool: **ufbt** or **fbt**. Target: external FAP 
 - Never use deprecated `ValueMutex` — use `FuriMutex` directly (current SDK).
 - **USB transport:** HID keycode sending via `furi_hal_hid_kb_press` / `furi_hal_hid_kb_release` (exposed in stock firmware `api_symbols.csv`).
 - **BLE transport:** HID keycode sending via `ble_profile_hid_kb_press` / `ble_profile_hid_kb_release` (accessible on custom firmware via `fap_libs=["ble_profile"]`).
+- **BLE connection detection:** Use `bt_set_status_changed_callback()` with `BtStatusConnected`. Do NOT use `furi_hal_bt_is_active()` (it only checks radio state, not HID connection). `ble_profile_hid_is_connected()` does not exist in the SDK.
+- **BLE cleanup:** Always call `bt_set_status_changed_callback(bt, NULL, NULL)` before `bt_profile_restore_default()` and `furi_record_close(RECORD_BT)` to avoid use-after-free crashes on relaunch.
 - Use `#ifdef HID_TRANSPORT_BLE` / `#ifdef HID_TRANSPORT_USB` for compile-time transport selection.
 - Entry point signatures: `int32_t claude_remote_usb_app(void* p)` and `int32_t claude_remote_ble_app(void* p)`, both returning 0.
 - Stack size: `2 * 1024` minimum (HID + GUI).
@@ -51,13 +53,14 @@ All reference docs live in `./docs/`. Consult these BEFORE writing any Flipper A
 ```
 FAP/
 ├── AGENTS.md                          # this file
+├── CLAUDE.md                          # quick-start project context
 ├── application.fam                    # dual-build FAP manifest (USB + BLE)
-├── claude_remote.c                    # main app — all modes, #ifdef transport
+├── claude_remote.c                    # main app (~1320 lines), all modes, #ifdef transport
 ├── claude_remote.png                  # 10x10 1-bit app icon
 ├── images/                            # icon assets directory
 ├── update_manual.sh                   # regenerate manual .txt files for SD card
 ├── docs/                              # reference docs (retrieval target)
-│   ├── USER_MANUAL.md                 # full user manual (install, use, app store, limitations)
+│   ├── USER_MANUAL.md                 # full user manual
 │   ├── flipper-fap-manifest.md
 │   ├── flipper-app-architecture.md
 │   ├── flipper-ui-patterns.md
@@ -66,10 +69,8 @@ FAP/
 │   └── prd.md
 └── dist/                              # build output
     ├── claude_remote_usb.fap          # stock firmware build
-    └── claude_remote_ble.fap          # Momentum/Unleashed build
+    └── claude_remote_ble.fap          # Momentum/Unleashed build (primary)
 ```
-
-At runtime, the app reads manual files from `/ext/apps_data/claude_remote/manual/` first, falling back to compiled-in defaults.
 
 ---
 
@@ -91,10 +92,10 @@ App(
     cdefines=["HID_TRANSPORT_USB"],
 )
 
-# BLE version — Momentum/Unleashed only
+# BLE version — Momentum/Unleashed, primary build
 App(
     appid="claude_remote_ble",
-    name="Claude Remote BLE",
+    name="Claupper",
     apptype=FlipperAppType.EXTERNAL,
     entry_point="claude_remote_ble_app",
     requires=["gui", "bt"],
@@ -115,53 +116,79 @@ App(
 ### State Machine
 
 ```
-         ┌──────────────┐
-         │  Home Screen  │
-         │  (menu pick)  │
+         ┌─────────────┐
+         │   Splash     │  (3s auto-advance or any key)
+         │  landscape   │
+         └──────┬───────┘
+                │
+         ┌──────▼───────┐
+         │  Home Screen  │  portrait 64x128
+         │  OK → Remote  │
+         │  Down → Manual│
          └──┬────────┬───┘
             │        │
-     OK/Right    Left/Down
+         OK/Right  Down/Left
             │        │
-   ┌────────▼──┐  ┌──▼───────────┐
-   │  Remote   │  │    Manual    │
-   │  Control  │  │    Reader    │
-   └───────────┘  └──────────────┘
-         Back → Home     Back → Home
+   ┌────────▼──┐  ┌──▼───────────────────┐
+   │  Remote   │  │  Manual              │
+   │  portrait │  │  landscape 128x64    │
+   │  64x128   │  │                      │
+   └───────────┘  │  Categories → Sections│
+     Back → Home  │  → Reader / Quiz     │
+                  └──────────────────────┘
+                        Back → up one level
 ```
 
-### Remote Control Mode
+### Splash Screen (landscape 128x64)
 
-- ViewPort with draw callback showing orientation-aware button legend.
-- Input callback maps physical keys → HID keycodes based on current orientation.
-- Default (landscape, USB/BLE):
-  - Left → `1` keycode
-  - Up → `2` keycode
-  - Right → `3` keycode
-  - OK → `Enter` keycode
-  - Down → `F5` keycode (macOS dictation / voice trigger)
-- Back (short) → toggle orientation (normal ↔ flipped 180).
-- Back (long) → return to Home Screen.
-- If HID not connected, draw transport-appropriate warning (USB: "connect via USB-C cable", BLE: "pair via Bluetooth").
+- WETWARE logo bitmap (128x20 XBM, `canvas_draw_xbm`)
+- "Claupper Remote" title, "LABS" right-aligned, "Flipper's claudepanion" tagline
+- Auto-advances after 3 seconds or on any key press
 
-### Orientation Flip Logic
+### Home Screen (portrait 64x128)
 
-When flipped, physical-to-logical mapping inverts:
-- Physical Left → logical Right → sends `3`
-- Physical Right → logical Left → sends `1`
-- Physical Up → logical Down → sends `F5`
-- Physical Down → logical Up → sends `2`
-- OK stays OK → `Enter`
+- "Claude Remote" title with D-pad pixel art illustration
+- OK → Remote, Down → Manual
+- Back → exit app
 
-### Manual Reader Mode
+### Remote Control Mode (portrait 64x128)
 
-- On enter: scan `/ext/apps_data/claude_remote/manual/` for `*.txt` files, sort by name (numeric prefix).
-- If no SD files found, use compiled-in fallback strings.
-- Display: chapter title (from filename) at top, scrollable text body.
-- Controls:
-  - Up/Down → scroll text within chapter.
-  - Left/Right → previous/next chapter.
-  - Back → return to Home Screen.
-- Text rendering: `FontSecondary` (smaller), word-wrap at 128px width, scroll offset in pixels.
+- D-pad pixel art with labeled buttons (1/checkmark, 2/X, 3/?, Enter, Mic)
+- All keys go through deferred send path (300ms double-click window for Left/Up/Right)
+- Key mapping:
+  - Left → `1` (approve), double-click → Backspace
+  - Up → `2` (decline), double-click → Page Up
+  - Right → `3` (other), double-click → Escape
+  - OK → `Enter`
+  - Down → `F5` (macOS dictation / voice trigger)
+- Back (short) → return to Home Screen
+- If HID not connected, shows transport-appropriate warning
+
+### Manual Reader Mode (landscape 128x64)
+
+Four sub-views with hierarchical navigation:
+
+**Categories** → folder list with 5 categories + Quiz Mode
+- Up/Down to scroll, OK/Right to enter, Back to home
+
+**Sections** → section list within selected category
+- Up/Down to scroll, OK/Right to read, Back/Left to categories
+
+**Reader** → scrollable text content (FontSecondary, ≤30 chars/line)
+- Up/Down to scroll text, Left/Right prev/next section, Back to section list
+
+**Quiz** → flashcard-style command quiz (12 cards)
+- OK to reveal answer, 1=knew it, 2=didn't know, Right=skip
+- Shows score at completion, OK to retry
+
+### Compiled-in Manual Content
+
+5 categories, ~17 sections total, all `static const`:
+- **Getting Started** (3): Installing Claude, First Launch, System Requirements
+- **Workspace** (4): Ideal Project Setup, CLAUDE.md Guide, The /init Command, .claude/ Directory
+- **Commands** (4): Navigation & Basics, Session Management, Configuration, Debugging
+- **Tools** (3): File Operations, Search & Explore, Sub-agents & Web
+- **Workflows** (3): New Project Setup, Debug & Test, Code Review
 
 ---
 
@@ -217,18 +244,26 @@ furi_hal_usb_set_config(usb_prev, NULL);
 #include <bt/bt_service/bt.h>
 #include <extra_profiles/hid_profile.h>
 
-// Setup: disconnect BT, start HID profile
+// Status callback for connection detection
+static void bt_status_callback(BtStatus status, void* context) {
+    MyState* state = (MyState*)context;
+    state->hid_connected = (status == BtStatusConnected);
+}
+
+// Setup: disconnect BT, start HID profile, register callback
 Bt* bt = furi_record_open(RECORD_BT);
 bt_disconnect(bt);
 furi_delay_ms(200);
 FuriHalBleProfileBase* ble_profile = bt_profile_start(bt, ble_profile_hid, NULL);
+bt_set_status_changed_callback(bt, bt_status_callback, state);
 
 // Press and release a key
 ble_profile_hid_kb_press(ble_profile, HID_KEYBOARD_1);
-furi_delay_ms(50);
+furi_delay_ms(150);
 ble_profile_hid_kb_release(ble_profile, HID_KEYBOARD_1);
 
-// Cleanup: restore default BT profile
+// Cleanup: clear callback FIRST, then restore
+bt_set_status_changed_callback(bt, NULL, NULL);
 ble_profile_hid_kb_release_all(ble_profile);
 bt_profile_restore_default(bt);
 furi_record_close(RECORD_BT);
@@ -236,11 +271,12 @@ furi_record_close(RECORD_BT);
 
 ### HID Connection Check
 ```c
-// USB
+// USB: poll in event loop
 bool connected = furi_hal_hid_is_connected();
 
-// BLE
-bool connected = ble_profile_hid_is_connected(ble_profile);
+// BLE: use bt_set_status_changed_callback (see above)
+// Do NOT use furi_hal_bt_is_active() — it checks radio, not HID connection
+// Do NOT use ble_profile_hid_is_connected() — it does not exist in the SDK
 ```
 
 **Note:** BLE HID (`ble_profile_hid`) is restricted in stock firmware `api_symbols.csv` but accessible on Momentum/Unleashed via `fap_libs=["ble_profile"]`.
@@ -265,11 +301,13 @@ furi_record_close(RECORD_STORAGE);
 
 ## Conventions
 
-- Function prefix: `claude_remote_` for app-level, `remote_mode_` for remote, `manual_mode_` for reader.
-- All `static` where possible (file-scoped).
+- All functions `static` where possible (file-scoped).
 - No dynamic allocation in draw callbacks — read from state only.
+- All manual content is `static const` (compiled-in, zero malloc).
 - `FURI_LOG_I("CRemote", ...)` for info logs, `FURI_LOG_E` for errors.
 - Use `furi_check()` for invariants, `furi_assert()` for debug-only.
+- BLE key send uses 150ms press-release delay (vs 50ms for USB) for BLE timing reliability.
+- Menu lists show 3 visible items max to avoid overlap with bottom nav text on 128x64 display.
 
 ---
 
@@ -286,3 +324,4 @@ furi_record_close(RECORD_STORAGE);
 | Dev tutorial (full examples) | https://github.com/m1ch3al/flipper-zero-dev-tutorial |
 | Claude Code best practices | https://www.anthropic.com/engineering/claude-code-best-practices |
 | Claude Code docs | https://code.claude.com/docs/en/interactive-mode |
+| GitHub repo | https://github.com/Wet-wr-Labs/claupper |

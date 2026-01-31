@@ -22,7 +22,7 @@ App(
 
 App(
     appid="claude_remote_ble",
-    name="Claude Remote BLE",
+    name="Claupper",
     apptype=FlipperAppType.EXTERNAL,
     entry_point="claude_remote_ble_app",
     requires=["gui", "bt"],

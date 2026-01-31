@@ -1,10 +1,10 @@
-# Claude Remote — Project Context
+# Claupper — Project Context
 
 *By Kasen Sansonetti & the Wetware Labs team. WetwareOfficial.com*
 
 ## What This Is
 
-A Flipper Zero app (FAP) that turns the Flipper into a one-handed remote for Claude Code and an offline Claude Code manual reader. Two builds from one codebase: USB (stock firmware) and BLE (Momentum/Unleashed wireless).
+A Flipper Zero app (FAP) called **Claupper** — a one-handed Bluetooth remote for Claude Code and an offline Claude Code manual reader. Two builds from one codebase: USB (stock firmware) and BLE (Momentum/Unleashed wireless). The BLE version is the primary build, branded simply as "Claupper."
 
 ## Read These First
 
@@ -21,15 +21,15 @@ Before writing any code, read the relevant docs:
 
 ## Key Files
 
-- `claude_remote.c` — the entire app (~640 lines). All three modes (home, remote, manual) in one file with `#ifdef HID_TRANSPORT_BLE` / `HID_TRANSPORT_USB` for compile-time transport switching.
-- `application.fam` — two `App()` entries: `claude_remote_usb` and `claude_remote_ble`.
+- `claude_remote.c` — the entire app (~1320 lines). Four modes (splash, home, remote, manual) in one file with `#ifdef HID_TRANSPORT_BLE` / `HID_TRANSPORT_USB` for compile-time transport switching.
+- `application.fam` — two `App()` entries: `claude_remote_usb` and `claude_remote_ble` (named "Claupper").
 
 ## Build & Test
 
 ```bash
 ufbt                                    # builds both .fap files to dist/
-ufbt launch APPSRC=claude_remote_usb    # upload + run USB version on connected Flipper
-ufbt launch APPSRC=claude_remote_ble    # upload + run BLE version on connected Flipper
+ufbt launch APPID=claude_remote_usb     # upload + run USB version on connected Flipper
+ufbt launch APPID=claude_remote_ble     # upload + run BLE version on connected Flipper
 ```
 
 ## Rules
@@ -39,4 +39,5 @@ ufbt launch APPSRC=claude_remote_ble    # upload + run BLE version on connected 
 - Never use deprecated `ValueMutex` — use `FuriMutex`.
 - Clean up all allocations on exit. No busy loops. Use `furi_message_queue_get()` with 100ms timeout.
 - Use `#ifdef HID_TRANSPORT_BLE` / `HID_TRANSPORT_USB` for any transport-specific code.
+- BLE connection detection: use `bt_set_status_changed_callback()` with `BtStatusConnected`, NOT `furi_hal_bt_is_active()`.
 - Always present the user with clickable options (AskUserQuestion tool) instead of asking them to type text.
