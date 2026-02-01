@@ -571,9 +571,9 @@ static void send_double_action(ClaudeRemoteState* state, InputKey key) {
     const char* label = NULL;
     switch(key) {
     case InputKeyLeft:
-        SEND_HID(state, HID_KEYBOARD_W | KEY_MOD_LEFT_CTRL);
-        label = "Del Word";
-        FURI_LOG_I(TAG, "Double: Ctrl+W (delete word)");
+        SEND_HID(state, HID_KEYBOARD_U | KEY_MOD_LEFT_CTRL);
+        label = "Clear";
+        FURI_LOG_I(TAG, "Double: Ctrl+U (clear line)");
         break;
     case InputKeyUp:
         SEND_HID(state, HID_KEYBOARD_PAGE_UP);
