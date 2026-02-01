@@ -192,7 +192,7 @@ static const ManualSection commands_sections[] = {
      "Scrolling:\n"
      " Up/Down for history\n\n"
      "Voice (macOS):\n"
-     " F5  Toggle dictation\n"},
+     " Down  Start Dictation\n"},
 
     {"Session Management",
      "/clear\n"
@@ -436,17 +436,29 @@ static void bt_status_callback(BtStatus status, void* context) {
 
 /* ── HID helpers ── */
 
+#define HID_CONSUMER_DICTATION 0x00CF /* Consumer Page: Voice Command (triggers Edit > Start Dictation on macOS) */
+
 #ifdef HID_TRANSPORT_BLE
 static void send_hid_key(FuriHalBleProfileBase* profile, uint16_t keycode) {
     ble_profile_hid_kb_press(profile, keycode);
     furi_delay_ms(150);
     ble_profile_hid_kb_release(profile, keycode);
 }
+static void send_consumer_key(FuriHalBleProfileBase* profile, uint16_t usage) {
+    ble_profile_hid_consumer_key_press(profile, usage);
+    furi_delay_ms(150);
+    ble_profile_hid_consumer_key_release(profile, usage);
+}
 #else
 static void send_hid_key(uint16_t keycode) {
     furi_hal_hid_kb_press(keycode);
     furi_delay_ms(50);
     furi_hal_hid_kb_release(keycode);
+}
+static void send_consumer_key(uint16_t usage) {
+    furi_hal_hid_consumer_key_press(usage);
+    furi_delay_ms(50);
+    furi_hal_hid_consumer_key_release(usage);
 }
 #endif
 
@@ -482,8 +494,10 @@ static const uint8_t wetware_logo[] = {
 
 #ifdef HID_TRANSPORT_BLE
 #define SEND_HID(state, k) send_hid_key((state)->ble_profile, (k))
+#define SEND_CONSUMER(state, k) send_consumer_key((state)->ble_profile, (k))
 #else
 #define SEND_HID(state, k) send_hid_key((k))
+#define SEND_CONSUMER(state, k) send_consumer_key((k))
 #endif
 
 #define DC_TIMEOUT_TICKS 300 /* ~300ms at 1kHz tick */
@@ -511,8 +525,8 @@ static void flush_pending_single(ClaudeRemoteState* state) {
         FURI_LOG_I(TAG, "Sent: Enter");
         break;
     case InputKeyDown:
-        SEND_HID(state, HID_KEYBOARD_F5);
-        FURI_LOG_I(TAG, "Sent: F5 (voice)");
+        SEND_CONSUMER(state, HID_CONSUMER_DICTATION);
+        FURI_LOG_I(TAG, "Sent: Dictation (consumer 0x00CF)");
         break;
     default:
         break;
@@ -701,7 +715,7 @@ static void draw_remote(Canvas* canvas, ClaudeRemoteState* state) {
     canvas_set_font(canvas, FontSecondary);
     canvas_draw_str_aligned(canvas, 52, 70, AlignCenter, AlignCenter, "?");
 
-    /* Down: Mic icon */
+    /* Down: Mic icon (Dictation) */
     canvas_draw_rframe(canvas, 29, 78, 6, 7, 2);
     canvas_draw_line(canvas, 27, 82, 27, 85);
     canvas_draw_line(canvas, 27, 85, 37, 85);
