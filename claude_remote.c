@@ -538,8 +538,8 @@ static void send_double_action(ClaudeRemoteState* state, InputKey key) {
 
     switch(key) {
     case InputKeyLeft:
-        SEND_HID(state, HID_KEYBOARD_DELETE | KEY_MOD_LEFT_ALT);
-        FURI_LOG_I(TAG, "Double: Option+Backspace (delete word)");
+        SEND_HID(state, HID_KEYBOARD_W | KEY_MOD_LEFT_CTRL);
+        FURI_LOG_I(TAG, "Double: Ctrl+W (delete word)");
         break;
     case InputKeyUp:
         SEND_HID(state, HID_KEYBOARD_PAGE_UP);
