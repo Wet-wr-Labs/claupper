@@ -1,5 +1,6 @@
 #include <furi.h>
 #include <furi_hal.h>
+#include <furi_hal_random.h>
 #include <furi_hal_usb_hid.h>
 #include <gui/gui.h>
 #include <gui/view_port.h>
@@ -67,9 +68,19 @@ typedef struct {
     uint8_t section_count;
 } ManualCategory;
 
+typedef enum {
+    QuizTypeFlashcard,
+    QuizTypeMultiChoice,
+} QuizType;
+
 typedef struct {
+    QuizType type;
     const char* description;
     const char* command;
+    const char* option_a;
+    const char* option_b;
+    const char* option_c;
+    uint8_t correct_option;
 } QuizCard;
 
 /* ══════════════════════════════════════════════════════════
@@ -121,6 +132,21 @@ static const ManualSection setup_sections[] = {
      " CLAUDE.md in project root\n\n"
      "API key or Claude login\n"
      "required for operation.\n"},
+
+    {"Authentication",
+     "Two ways to authenticate:\n\n"
+     "1. Claude Max subscription\n"
+     "   claude login\n"
+     "   Opens browser to sign in\n\n"
+     "2. API key\n"
+     "   export ANTHROPIC_API_KEY\n"
+     "     =sk-ant-...\n\n"
+     "Manage sessions:\n"
+     " /login   sign in again\n"
+     " /logout  sign out\n"
+     " /status  check auth state\n\n"
+     "Max: flat monthly rate.\n"
+     "API: pay per token used.\n"},
 };
 
 /* ── Workspace ── */
@@ -191,6 +217,22 @@ static const ManualSection workspace_sections[] = {
      " Claude loads on start.\n\n"
      "Commit .claude/ to share\n"
      "config with your team.\n"},
+
+    {"Skills System",
+     "Skills are reusable prompts\n"
+     "Claude loads automatically.\n\n"
+     "Location:\n"
+     " .claude/skills/*.md\n\n"
+     "Each .md file is a skill.\n"
+     "Claude reads them at start\n"
+     "like CLAUDE.md.\n\n"
+     "Use for:\n"
+     " - Custom workflows\n"
+     " - Code review rules\n"
+     " - Response templates\n"
+     " - Domain knowledge\n\n"
+     "Skills replace the old\n"
+     "custom slash commands.\n"},
 };
 
 /* ── Commands ── */
@@ -257,6 +299,44 @@ static const ManualSection commands_sections[] = {
      "     conversation size\n\n"
      " Display broken:\n"
      "  -> /terminal-setup\n"},
+
+    {"Slash Commands A-M",
+     "/bug\n"
+     " Report a Claude Code bug\n\n"
+     "/commit\n"
+     " Auto-generate a commit\n"
+     " message and commit\n\n"
+     "/listen\n"
+     " Pause and wait for\n"
+     " file changes to resume\n\n"
+     "/login\n"
+     " Sign in to Anthropic\n\n"
+     "/logout\n"
+     " Sign out of session\n\n"
+     "/memory\n"
+     " Edit CLAUDE.md quickly\n\n"
+     "/model\n"
+     " Switch AI model mid-chat\n"
+     " Opus, Sonnet, or Haiku\n\n"
+     "/mcp\n"
+     " Manage MCP servers\n"},
+
+    {"Slash Commands N-Z",
+     "/permissions\n"
+     " View and edit tool\n"
+     " access for this session\n\n"
+     "/pr-comments\n"
+     " Fetch GitHub PR review\n"
+     " comments into session\n\n"
+     "/rewind\n"
+     " Undo to a previous\n"
+     " point in conversation\n\n"
+     "/status\n"
+     " Show auth, model, and\n"
+     " session info\n\n"
+     "/vim\n"
+     " Toggle vim keybindings\n"
+     " in the input editor\n"},
 };
 
 /* ── Tools ── */
@@ -361,39 +441,227 @@ static const ManualSection workflows_sections[] = {
      "Step 4:\n"
      " Ask Claude to fix\n"
      " issues it found.\n"},
+
+    {"Git & PRs",
+     "Commit workflow:\n"
+     " 1. Make changes w/ Claude\n"
+     " 2. Type /commit\n"
+     " 3. Claude writes message\n"
+     " 4. Approve to commit\n\n"
+     "PR review:\n"
+     " Paste a PR URL or use\n"
+     " /pr-comments to fetch\n"
+     " review feedback.\n\n"
+     "Tips:\n"
+     " Keep project in git repo\n"
+     " Commit after milestones\n"
+     " Claude reads git history\n"
+     " for better context.\n"},
+};
+
+/* ── Advanced ── */
+
+static const ManualSection advanced_sections[] = {
+    {"Permissions",
+     "Claude asks before using\n"
+     "tools like Bash or Write.\n\n"
+     "Settings hierarchy:\n"
+     " 1. Project .claude/\n"
+     "    settings.json\n"
+     " 2. User ~/.claude/\n"
+     "    settings.json\n"
+     " 3. Defaults\n\n"
+     "In settings.json:\n"
+     " \"allowedTools\": [...]\n"
+     " \"deniedTools\":  [...]\n\n"
+     "/permissions to view\n"
+     "current session rules.\n"},
+
+    {"MCP Servers",
+     "MCP = Model Context\n"
+     "Protocol. Connect external\n"
+     "tools to Claude Code.\n\n"
+     "Examples:\n"
+     " Database queries\n"
+     " API integrations\n"
+     " Custom data sources\n\n"
+     "Setup:\n"
+     " /mcp to manage servers\n"
+     " Configure in settings\n"
+     " or .claude/settings\n\n"
+     "MCP servers run as local\n"
+     "processes Claude can call\n"
+     "like built-in tools.\n"},
+
+    {"Hooks",
+     "Hooks run your scripts\n"
+     "before/after Claude acts.\n\n"
+     "Types:\n"
+     " PreToolUse  before tool\n"
+     " PostToolUse after tool\n\n"
+     "Config in settings.json:\n"
+     " \"hooks\": {\n"
+     "   \"PreToolUse\": [{\n"
+     "     \"command\": \"./lint\"\n"
+     "   }]\n"
+     " }\n\n"
+     "Use cases:\n"
+     " Auto-lint on file save\n"
+     " Run tests after edit\n"
+     " Enforce code standards\n"},
+
+    {"Extended Thinking",
+     "Claude can think deeply\n"
+     "before responding.\n\n"
+     "When active, Claude uses\n"
+     "extra tokens reasoning\n"
+     "through hard problems.\n\n"
+     "Enable:\n"
+     " Type \"think\" in prompt\n"
+     " or toggle via /model\n\n"
+     "Best for:\n"
+     " Complex architecture\n"
+     " Multi-step debugging\n"
+     " Tricky logic problems\n\n"
+     "Uses more tokens but\n"
+     "improves output quality.\n"},
+};
+
+/* ── Headless & CI ── */
+
+static const ManualSection headless_sections[] = {
+    {"Headless Mode",
+     "Run Claude without chat:\n"
+     " claude -p \"your query\"\n\n"
+     "Pipe input:\n"
+     " cat file | claude -p\n"
+     "   \"review this code\"\n\n"
+     "JSON output:\n"
+     " claude -p \"query\"\n"
+     "   --output-format json\n\n"
+     "Returns structured result\n"
+     "for scripting.\n\n"
+     "No interactive prompts.\n"
+     "No approval needed for\n"
+     "read-only operations.\n"},
+
+    {"CI Integration",
+     "Use Claude in CI:\n\n"
+     " claude -p \"review PR\"\n"
+     "   --no-input\n\n"
+     "Key flags:\n"
+     " -p         print mode\n"
+     " --no-input no prompts\n"
+     " --model    pick model\n"
+     " --output-format json\n\n"
+     "Set ANTHROPIC_API_KEY in\n"
+     "CI environment variables.\n\n"
+     "Exit codes:\n"
+     " 0 = success\n"
+     " 1 = error\n\n"
+     "Great for automated review\n"
+     "and code generation.\n"},
+
+    {"Model Selection",
+     "Switch models anytime:\n"
+     " /model in chat\n"
+     " --model flag at launch\n\n"
+     "Available models:\n\n"
+     " Opus (most capable)\n"
+     "  Best reasoning\n"
+     "  Highest cost\n\n"
+     " Sonnet (balanced)\n"
+     "  Good speed + quality\n"
+     "  Default model\n\n"
+     " Haiku (fastest)\n"
+     "  Quick responses\n"
+     "  Lowest cost\n\n"
+     "Pick based on task\n"
+     "complexity and budget.\n"},
 };
 
 /* ── Category index ── */
 
 static const ManualCategory categories[] = {
-    {"Getting Started", setup_sections, 3},
-    {"Workspace", workspace_sections, 4},
-    {"Commands", commands_sections, 4},
+    {"Getting Started", setup_sections, 4},
+    {"Workspace", workspace_sections, 5},
+    {"Commands", commands_sections, 6},
     {"Tools", tools_sections, 3},
-    {"Workflows", workflows_sections, 3},
+    {"Workflows", workflows_sections, 4},
+    {"Advanced", advanced_sections, 4},
+    {"Headless & CI", headless_sections, 3},
 };
 
-#define CATEGORY_COUNT 5
+#define CATEGORY_COUNT 7
 #define MENU_ITEM_COUNT (CATEGORY_COUNT + 1) /* +1 for Quiz */
 
 /* ── Quiz cards ── */
 
 static const QuizCard quiz_cards[] = {
-    {"Show help and\navailable commands", "/help"},
-    {"Clear conversation\nhistory", "/clear"},
-    {"Summarize context to\nreduce token usage", "/compact"},
-    {"Open configuration\nsettings editor", "/config"},
-    {"Show token usage\nand session cost", "/cost"},
-    {"Diagnose setup issues\nand check API", "/doctor"},
-    {"Create CLAUDE.md\nfor your project", "/init"},
-    {"Review PR or\ncode changes", "/review"},
-    {"Fix terminal display\nand rendering", "/terminal-setup"},
-    {"Start a brand new\nsession from scratch", "claude --new"},
-    {"Resume your previous\nconversation", "claude --continue"},
-    {"Run a one-shot query\nwithout chat mode", "claude -p \"query\""},
+    /* existing flashcards */
+    {QuizTypeFlashcard, "Show help and\navailable commands",
+     "/help", NULL, NULL, NULL, 0},
+    {QuizTypeFlashcard, "Clear conversation\nhistory",
+     "/clear", NULL, NULL, NULL, 0},
+    {QuizTypeFlashcard, "Summarize context to\nreduce token usage",
+     "/compact", NULL, NULL, NULL, 0},
+    {QuizTypeFlashcard, "Open configuration\nsettings editor",
+     "/config", NULL, NULL, NULL, 0},
+    {QuizTypeFlashcard, "Show token usage\nand session cost",
+     "/cost", NULL, NULL, NULL, 0},
+    {QuizTypeFlashcard, "Diagnose setup issues\nand check API",
+     "/doctor", NULL, NULL, NULL, 0},
+    {QuizTypeFlashcard, "Create CLAUDE.md\nfor your project",
+     "/init", NULL, NULL, NULL, 0},
+    {QuizTypeFlashcard, "Review PR or\ncode changes",
+     "/review", NULL, NULL, NULL, 0},
+    {QuizTypeFlashcard, "Fix terminal display\nand rendering",
+     "/terminal-setup", NULL, NULL, NULL, 0},
+    {QuizTypeFlashcard, "Start a brand new\nsession from scratch",
+     "claude --new", NULL, NULL, NULL, 0},
+    {QuizTypeFlashcard, "Resume your previous\nconversation",
+     "claude --continue", NULL, NULL, NULL, 0},
+    {QuizTypeFlashcard, "Run a one-shot query\nwithout chat mode",
+     "claude -p \"query\"", NULL, NULL, NULL, 0},
+
+    /* new flashcards */
+    {QuizTypeFlashcard, "Switch AI model\nduring a chat session",
+     "/model", NULL, NULL, NULL, 0},
+    {QuizTypeFlashcard, "Edit your project's\nCLAUDE.md memory file",
+     "/memory", NULL, NULL, NULL, 0},
+    {QuizTypeFlashcard, "Undo to a previous\npoint in conversation",
+     "/rewind", NULL, NULL, NULL, 0},
+    {QuizTypeFlashcard, "Generate commit msg\nand commit changes",
+     "/commit", NULL, NULL, NULL, 0},
+
+    /* multi-choice */
+    {QuizTypeMultiChoice, "Where do Skills\nfiles live?",
+     ".claude/skills/",
+     ".claude/skills/", "CLAUDE.md", "~/.config/claude/", 0},
+    {QuizTypeMultiChoice, "Which model is the\ndefault for Claude?",
+     "Sonnet",
+     "Opus", "Sonnet", "Haiku", 1},
+    {QuizTypeMultiChoice, "What does the -p\nflag do?",
+     "Print mode (no chat)",
+     "Print mode", "Profile mode", "Plugin mode", 0},
+    {QuizTypeMultiChoice, "Settings hierarchy\nhighest priority?",
+     "Project settings",
+     "Project", "User", "Default", 0},
+    {QuizTypeMultiChoice, "What is MCP?",
+     "Model Context Protocol",
+     "Model Context", "Manual Command", "Memory Cache", 0},
+    {QuizTypeMultiChoice, "Which hook runs\nBEFORE a tool?",
+     "PreToolUse",
+     "PostToolUse", "PreToolUse", "OnToolUse", 1},
+    {QuizTypeMultiChoice, "How to get JSON\noutput from CLI?",
+     "--output-format json",
+     "--json", "--output-format", "--format=json", 1},
+    {QuizTypeMultiChoice, "Ctrl+C in Claude\nCode does what?",
+     "Cancel/interrupt",
+     "Copy text", "Cancel/interrupt", "Clear screen", 1},
 };
 
-#define QUIZ_CARD_COUNT 12
+#define QUIZ_CARD_COUNT 24
 
 /* ── App state ── */
 
@@ -422,6 +690,11 @@ typedef struct {
     bool quiz_revealed;
     uint8_t quiz_correct;
     uint8_t quiz_total;
+    uint8_t quiz_streak;
+    uint8_t quiz_best_streak;
+    uint8_t quiz_order[24]; /* QUIZ_CARD_COUNT — shuffled indices */
+    int8_t  quiz_selected;  /* multi-choice: -1=none, 0/1/2 */
+    bool    quiz_answered;  /* multi-choice: showing feedback */
 
     /* double-click detection (remote mode) */
     InputKey dc_key;
@@ -444,6 +717,18 @@ static uint16_t count_lines(const char* text) {
         if(*p == '\n') count++;
     }
     return count;
+}
+
+static void quiz_shuffle(ClaudeRemoteState* state) {
+    for(uint8_t i = 0; i < QUIZ_CARD_COUNT; i++) {
+        state->quiz_order[i] = i;
+    }
+    for(uint8_t i = QUIZ_CARD_COUNT - 1; i > 0; i--) {
+        uint8_t j = furi_hal_random_get() % (i + 1);
+        uint8_t tmp = state->quiz_order[i];
+        state->quiz_order[i] = state->quiz_order[j];
+        state->quiz_order[j] = tmp;
+    }
 }
 
 /* ── BLE status callback ── */
@@ -971,53 +1256,13 @@ static void draw_manual_read(Canvas* canvas, ClaudeRemoteState* state) {
 
 /* ── Manual: Quiz mode (landscape 128x64) ── */
 
-static void draw_manual_quiz(Canvas* canvas, ClaudeRemoteState* state) {
-    canvas_clear(canvas);
+/* ── Quiz: draw helpers ── */
 
-    /* check if quiz complete */
-    if(state->quiz_index >= QUIZ_CARD_COUNT) {
-        canvas_set_font(canvas, FontPrimary);
-        canvas_draw_str_aligned(canvas, 64, 10, AlignCenter, AlignCenter, "Quiz Complete!");
-        canvas_draw_line(canvas, 0, 18, 128, 18);
-
-        canvas_set_font(canvas, FontSecondary);
-        char score_buf[32];
-        snprintf(score_buf, sizeof(score_buf), "Score: %d / %d", state->quiz_correct, state->quiz_total);
-        canvas_draw_str_aligned(canvas, 64, 32, AlignCenter, AlignCenter, score_buf);
-
-        if(state->quiz_total > 0) {
-            int pct = (state->quiz_correct * 100) / state->quiz_total;
-            char pct_buf[16];
-            snprintf(pct_buf, sizeof(pct_buf), "%d%% correct", pct);
-            canvas_draw_str_aligned(canvas, 64, 44, AlignCenter, AlignCenter, pct_buf);
-        }
-
-        canvas_draw_str_aligned(canvas, 64, 60, AlignCenter, AlignBottom, "OK:retry  Bk:menu");
-        return;
-    }
-
-    const QuizCard* card = &quiz_cards[state->quiz_index];
-
-    /* header */
-    canvas_set_font(canvas, FontPrimary);
-    char header[32];
-    snprintf(header, sizeof(header), "Quiz %d/%d", state->quiz_index + 1, QUIZ_CARD_COUNT);
-    canvas_draw_str(canvas, 2, 10, header);
-
-    if(state->quiz_total > 0) {
-        canvas_set_font(canvas, FontSecondary);
-        char score[16];
-        snprintf(score, sizeof(score), "%d/%d", state->quiz_correct, state->quiz_total);
-        canvas_draw_str_aligned(canvas, 124, 10, AlignRight, AlignCenter, score);
-    }
-
-    canvas_draw_line(canvas, 0, 13, 128, 13);
-
-    /* description text */
+static void draw_quiz_question(Canvas* canvas, const char* desc) {
     canvas_set_font(canvas, FontSecondary);
-    const char* p = card->description;
+    const char* p = desc;
     int y = 26;
-    while(*p && y < 48) {
+    while(*p && y < 40) {
         char line_buf[32];
         int i = 0;
         while(*p && *p != '\n' && i < 30) {
@@ -1028,9 +1273,12 @@ static void draw_manual_quiz(Canvas* canvas, ClaudeRemoteState* state) {
         canvas_draw_str(canvas, 4, y, line_buf);
         y += 10;
     }
+}
+
+static void draw_quiz_flashcard(Canvas* canvas, ClaudeRemoteState* state, const QuizCard* card) {
+    draw_quiz_question(canvas, card->description);
 
     if(state->quiz_revealed) {
-        /* show answer in inverted box */
         int cmd_len = strlen(card->command);
         int box_w = cmd_len * 6 + 8;
         int box_x = 64 - box_w / 2;
@@ -1039,9 +1287,117 @@ static void draw_manual_quiz(Canvas* canvas, ClaudeRemoteState* state) {
         canvas_draw_str_aligned(canvas, 64, 50, AlignCenter, AlignCenter, card->command);
         canvas_set_color(canvas, ColorBlack);
 
-        canvas_draw_str_aligned(canvas, 64, 62, AlignCenter, AlignBottom, "1:Knew  2:Nope  >:skip");
+        canvas_draw_str_aligned(canvas, 64, 62, AlignCenter, AlignBottom, "<:Knew  ^:Nope  >:skip");
     } else {
         canvas_draw_str_aligned(canvas, 64, 62, AlignCenter, AlignBottom, "OK:reveal  >:skip");
+    }
+}
+
+static void draw_quiz_multichoice(Canvas* canvas, ClaudeRemoteState* state, const QuizCard* card) {
+    draw_quiz_question(canvas, card->description);
+
+    if(state->quiz_answered) {
+        bool was_correct = (state->quiz_selected == card->correct_option);
+        canvas_draw_box(canvas, 0, 38, 128, 14);
+        canvas_set_color(canvas, ColorWhite);
+        canvas_set_font(canvas, FontPrimary);
+        canvas_draw_str_aligned(canvas, 64, 45, AlignCenter, AlignCenter,
+            was_correct ? "CORRECT!" : "WRONG!");
+        canvas_set_color(canvas, ColorBlack);
+
+        if(!was_correct) {
+            canvas_set_font(canvas, FontSecondary);
+            canvas_draw_str_aligned(canvas, 64, 56, AlignCenter, AlignCenter, card->command);
+        }
+
+        canvas_set_font(canvas, FontSecondary);
+        canvas_draw_str_aligned(canvas, 64, 62, AlignCenter, AlignBottom, "OK:next");
+    } else {
+        const char* opts[3] = {card->option_a, card->option_b, card->option_c};
+        const char* labels[3] = {"<", "^", ">"};
+
+        canvas_set_font(canvas, FontSecondary);
+        for(int i = 0; i < 3; i++) {
+            int oy = 44 + i * 8;
+            bool selected = (state->quiz_selected == i);
+
+            if(selected) {
+                canvas_draw_box(canvas, 0, oy - 7, 128, 9);
+                canvas_set_color(canvas, ColorWhite);
+            }
+
+            char opt_buf[32];
+            snprintf(opt_buf, sizeof(opt_buf), "%s %s", labels[i], opts[i]);
+            canvas_draw_str(canvas, 2, oy, opt_buf);
+
+            if(selected) {
+                canvas_set_color(canvas, ColorBlack);
+            }
+        }
+    }
+}
+
+static void draw_manual_quiz(Canvas* canvas, ClaudeRemoteState* state) {
+    canvas_clear(canvas);
+
+    /* completion screen */
+    if(state->quiz_index >= QUIZ_CARD_COUNT) {
+        canvas_set_font(canvas, FontPrimary);
+        canvas_draw_str_aligned(canvas, 64, 10, AlignCenter, AlignCenter, "Quiz Complete!");
+        canvas_draw_line(canvas, 0, 18, 128, 18);
+
+        canvas_set_font(canvas, FontSecondary);
+        char score_buf[32];
+        snprintf(score_buf, sizeof(score_buf), "Score: %d / %d",
+                 state->quiz_correct, state->quiz_total);
+        canvas_draw_str_aligned(canvas, 64, 30, AlignCenter, AlignCenter, score_buf);
+
+        if(state->quiz_total > 0) {
+            int pct = (state->quiz_correct * 100) / state->quiz_total;
+            char pct_buf[16];
+            snprintf(pct_buf, sizeof(pct_buf), "%d%% correct", pct);
+            canvas_draw_str_aligned(canvas, 64, 40, AlignCenter, AlignCenter, pct_buf);
+        }
+
+        char streak_buf[24];
+        snprintf(streak_buf, sizeof(streak_buf), "Best streak: %d",
+                 state->quiz_best_streak);
+        canvas_draw_str_aligned(canvas, 64, 50, AlignCenter, AlignCenter, streak_buf);
+
+        canvas_draw_str_aligned(canvas, 64, 62, AlignCenter, AlignBottom, "OK:retry  Bk:menu");
+        return;
+    }
+
+    uint8_t real_index = state->quiz_order[state->quiz_index];
+    const QuizCard* card = &quiz_cards[real_index];
+
+    /* header */
+    canvas_set_font(canvas, FontPrimary);
+    char header[32];
+    snprintf(header, sizeof(header), "Quiz %d/%d",
+             state->quiz_index + 1, QUIZ_CARD_COUNT);
+    canvas_draw_str(canvas, 2, 10, header);
+
+    /* score + streak */
+    canvas_set_font(canvas, FontSecondary);
+    if(state->quiz_total > 0 || state->quiz_streak > 0) {
+        char score[20];
+        if(state->quiz_streak >= 2) {
+            snprintf(score, sizeof(score), "%d/%d %dx",
+                     state->quiz_correct, state->quiz_total, state->quiz_streak);
+        } else {
+            snprintf(score, sizeof(score), "%d/%d",
+                     state->quiz_correct, state->quiz_total);
+        }
+        canvas_draw_str_aligned(canvas, 124, 10, AlignRight, AlignCenter, score);
+    }
+
+    canvas_draw_line(canvas, 0, 13, 128, 13);
+
+    if(card->type == QuizTypeFlashcard) {
+        draw_quiz_flashcard(canvas, state, card);
+    } else {
+        draw_quiz_multichoice(canvas, state, card);
     }
 }
 
@@ -1195,10 +1551,15 @@ static void handle_manual_categories(ClaudeRemoteState* state, InputEvent* event
             state->manual_view = ManualViewSections;
         } else {
             /* quiz mode */
+            quiz_shuffle(state);
             state->quiz_index = 0;
             state->quiz_revealed = false;
             state->quiz_correct = 0;
             state->quiz_total = 0;
+            state->quiz_streak = 0;
+            state->quiz_best_streak = 0;
+            state->quiz_selected = -1;
+            state->quiz_answered = false;
             state->manual_view = ManualViewQuiz;
         }
         break;
@@ -1275,52 +1636,98 @@ static void handle_manual_quiz(ClaudeRemoteState* state, InputEvent* event) {
     /* completion screen */
     if(state->quiz_index >= QUIZ_CARD_COUNT) {
         if(event->key == InputKeyOk) {
-            /* retry */
+            quiz_shuffle(state);
             state->quiz_index = 0;
             state->quiz_revealed = false;
             state->quiz_correct = 0;
             state->quiz_total = 0;
+            state->quiz_streak = 0;
+            state->quiz_best_streak = 0;
+            state->quiz_selected = -1;
+            state->quiz_answered = false;
         } else if(event->key == InputKeyBack) {
             state->manual_view = ManualViewCategories;
         }
         return;
     }
 
-    switch(event->key) {
-    case InputKeyOk:
-        if(!state->quiz_revealed) {
-            state->quiz_revealed = true;
+    uint8_t real_index = state->quiz_order[state->quiz_index];
+    const QuizCard* card = &quiz_cards[real_index];
+
+    if(card->type == QuizTypeFlashcard) {
+        /* flashcard input */
+        switch(event->key) {
+        case InputKeyOk:
+            if(!state->quiz_revealed) {
+                state->quiz_revealed = true;
+            }
+            break;
+        case InputKeyLeft:
+            if(state->quiz_revealed) {
+                state->quiz_correct++;
+                state->quiz_total++;
+                state->quiz_streak++;
+                if(state->quiz_streak > state->quiz_best_streak)
+                    state->quiz_best_streak = state->quiz_streak;
+                state->quiz_index++;
+                state->quiz_revealed = false;
+            }
+            break;
+        case InputKeyUp:
+            if(state->quiz_revealed) {
+                state->quiz_total++;
+                state->quiz_streak = 0;
+                state->quiz_index++;
+                state->quiz_revealed = false;
+            }
+            break;
+        case InputKeyRight:
+            if(state->quiz_index < QUIZ_CARD_COUNT - 1) {
+                state->quiz_index++;
+                state->quiz_revealed = false;
+            }
+            break;
+        case InputKeyBack:
+            state->manual_view = ManualViewCategories;
+            break;
+        default:
+            break;
         }
-        break;
-    case InputKeyLeft:
-        /* 1 = knew it */
-        if(state->quiz_revealed) {
-            state->quiz_correct++;
-            state->quiz_total++;
-            state->quiz_index++;
-            state->quiz_revealed = false;
+    } else {
+        /* multi-choice input */
+        if(state->quiz_answered) {
+            if(event->key == InputKeyOk) {
+                state->quiz_index++;
+                state->quiz_selected = -1;
+                state->quiz_answered = false;
+            } else if(event->key == InputKeyBack) {
+                state->manual_view = ManualViewCategories;
+            }
+        } else {
+            int8_t picked = -1;
+            switch(event->key) {
+            case InputKeyLeft:  picked = 0; break;
+            case InputKeyUp:    picked = 1; break;
+            case InputKeyRight: picked = 2; break;
+            case InputKeyBack:
+                state->manual_view = ManualViewCategories;
+                return;
+            default: break;
+            }
+            if(picked >= 0) {
+                state->quiz_selected = picked;
+                state->quiz_answered = true;
+                state->quiz_total++;
+                if(picked == card->correct_option) {
+                    state->quiz_correct++;
+                    state->quiz_streak++;
+                    if(state->quiz_streak > state->quiz_best_streak)
+                        state->quiz_best_streak = state->quiz_streak;
+                } else {
+                    state->quiz_streak = 0;
+                }
+            }
         }
-        break;
-    case InputKeyUp:
-        /* 2 = didn't know */
-        if(state->quiz_revealed) {
-            state->quiz_total++;
-            state->quiz_index++;
-            state->quiz_revealed = false;
-        }
-        break;
-    case InputKeyRight:
-        /* skip to next without scoring */
-        if(state->quiz_index < QUIZ_CARD_COUNT - 1) {
-            state->quiz_index++;
-            state->quiz_revealed = false;
-        }
-        break;
-    case InputKeyBack:
-        state->manual_view = ManualViewCategories;
-        break;
-    default:
-        break;
     }
 }
 
