@@ -404,11 +404,12 @@ typedef struct {
     FuriMutex* mutex;
 
 #ifdef HID_TRANSPORT_BLE
+    bool use_ble;
+    bool ble_connected;
     Bt* bt;
     FuriHalBleProfileBase* ble_profile;
-#else
-    FuriHalUsbInterface* usb_prev;
 #endif
+    FuriHalUsbInterface* usb_prev;
 
     /* manual navigation */
     ManualView manual_view;
@@ -450,8 +451,11 @@ static uint16_t count_lines(const char* text) {
 #ifdef HID_TRANSPORT_BLE
 static void bt_status_callback(BtStatus status, void* context) {
     ClaudeRemoteState* state = (ClaudeRemoteState*)context;
-    state->hid_connected = (status == BtStatusConnected);
-    FURI_LOG_I(TAG, "BT status: %d, connected: %d", status, state->hid_connected);
+    state->ble_connected = (status == BtStatusConnected);
+    if(state->use_ble) {
+        state->hid_connected = state->ble_connected;
+    }
+    FURI_LOG_I(TAG, "BT status: %d, connected: %d", status, state->ble_connected);
 }
 #endif
 
@@ -460,28 +464,28 @@ static void bt_status_callback(BtStatus status, void* context) {
 #define HID_CONSUMER_DICTATION 0x00CF /* Consumer Page: Voice Command (triggers Edit > Start Dictation on macOS) */
 
 #ifdef HID_TRANSPORT_BLE
-static void send_hid_key(FuriHalBleProfileBase* profile, uint16_t keycode) {
+static void send_hid_key_ble(FuriHalBleProfileBase* profile, uint16_t keycode) {
     ble_profile_hid_kb_press(profile, keycode);
     furi_delay_ms(150);
     ble_profile_hid_kb_release(profile, keycode);
 }
-static void send_consumer_key(FuriHalBleProfileBase* profile, uint16_t usage) {
+static void send_consumer_key_ble(FuriHalBleProfileBase* profile, uint16_t usage) {
     ble_profile_hid_consumer_key_press(profile, usage);
     furi_delay_ms(150);
     ble_profile_hid_consumer_key_release(profile, usage);
 }
-#else
-static void send_hid_key(uint16_t keycode) {
+#endif
+
+static void send_hid_key_usb(uint16_t keycode) {
     furi_hal_hid_kb_press(keycode);
     furi_delay_ms(50);
     furi_hal_hid_kb_release(keycode);
 }
-static void send_consumer_key(uint16_t usage) {
+static void send_consumer_key_usb(uint16_t usage) {
     furi_hal_hid_consumer_key_press(usage);
     furi_delay_ms(50);
     furi_hal_hid_consumer_key_release(usage);
 }
-#endif
 
 /* ── WETWARE logo bitmap (128x20, XBM format) ── */
 
@@ -514,11 +518,17 @@ static const uint8_t wetware_logo[] = {
 /* ── Transport-agnostic key send ── */
 
 #ifdef HID_TRANSPORT_BLE
-#define SEND_HID(state, k) send_hid_key((state)->ble_profile, (k))
-#define SEND_CONSUMER(state, k) send_consumer_key((state)->ble_profile, (k))
+#define SEND_HID(state, k) do { \
+    if((state)->use_ble) send_hid_key_ble((state)->ble_profile, (k)); \
+    else send_hid_key_usb((k)); \
+} while(0)
+#define SEND_CONSUMER(state, k) do { \
+    if((state)->use_ble) send_consumer_key_ble((state)->ble_profile, (k)); \
+    else send_consumer_key_usb((k)); \
+} while(0)
 #else
-#define SEND_HID(state, k) send_hid_key((k))
-#define SEND_CONSUMER(state, k) send_consumer_key((k))
+#define SEND_HID(state, k) send_hid_key_usb((k))
+#define SEND_CONSUMER(state, k) send_consumer_key_usb((k))
 #endif
 
 #define DC_TIMEOUT_TICKS 300 /* ~300ms at 1kHz tick */
@@ -665,7 +675,11 @@ static void draw_home(Canvas* canvas) {
     canvas_set_color(canvas, ColorWhite);
     canvas_draw_str_aligned(canvas, 13, 91, AlignCenter, AlignCenter, "OK");
     canvas_set_color(canvas, ColorBlack);
+#ifdef HID_TRANSPORT_BLE
+    canvas_draw_str(canvas, 24, 94, "USB Remote");
+#else
     canvas_draw_str(canvas, 24, 94, "Remote");
+#endif
 
     /* Down arrow → Manual */
     canvas_draw_frame(canvas, 6, 100, 14, 10);
@@ -709,22 +723,39 @@ static void draw_remote(Canvas* canvas, ClaudeRemoteState* state) {
 
     if(!state->hid_connected) {
         canvas_set_font(canvas, FontPrimary);
-        canvas_draw_str_aligned(canvas, 32, 30, AlignCenter, AlignCenter, "Not");
-        canvas_draw_str_aligned(canvas, 32, 44, AlignCenter, AlignCenter, "Connected");
+        canvas_draw_str_aligned(canvas, 32, 20, AlignCenter, AlignCenter, "Waiting...");
+        canvas_draw_line(canvas, 8, 28, 56, 28);
         canvas_set_font(canvas, FontSecondary);
 #ifdef HID_TRANSPORT_BLE
-        canvas_draw_str_aligned(canvas, 32, 64, AlignCenter, AlignCenter, "Pair Flipper");
-        canvas_draw_str_aligned(canvas, 32, 74, AlignCenter, AlignCenter, "as BT keyboard");
+        if(state->use_ble) {
+            canvas_draw_str_aligned(canvas, 32, 42, AlignCenter, AlignCenter, "On your Mac:");
+            canvas_draw_str_aligned(canvas, 32, 54, AlignCenter, AlignCenter, "System Settings");
+            canvas_draw_str_aligned(canvas, 32, 64, AlignCenter, AlignCenter, "> Bluetooth");
+            canvas_draw_str_aligned(canvas, 32, 76, AlignCenter, AlignCenter, "Look for Flipper");
+            canvas_draw_str_aligned(canvas, 32, 86, AlignCenter, AlignCenter, "and click Connect");
+            canvas_draw_str_aligned(canvas, 32, 104, AlignCenter, AlignCenter, "Already paired?");
+            canvas_draw_str_aligned(canvas, 32, 114, AlignCenter, AlignCenter, "It auto-connects.");
+        } else {
+            canvas_draw_str_aligned(canvas, 32, 46, AlignCenter, AlignCenter, "Plug Flipper in");
+            canvas_draw_str_aligned(canvas, 32, 58, AlignCenter, AlignCenter, "via USB-C cable");
+            canvas_draw_str_aligned(canvas, 32, 78, AlignCenter, AlignCenter, "Keys send over");
+            canvas_draw_str_aligned(canvas, 32, 88, AlignCenter, AlignCenter, "USB — no BT needed");
+        }
 #else
-        canvas_draw_str_aligned(canvas, 32, 64, AlignCenter, AlignCenter, "Connect via");
-        canvas_draw_str_aligned(canvas, 32, 74, AlignCenter, AlignCenter, "USB-C cable");
+        canvas_draw_str_aligned(canvas, 32, 46, AlignCenter, AlignCenter, "Plug Flipper in");
+        canvas_draw_str_aligned(canvas, 32, 58, AlignCenter, AlignCenter, "via USB-C cable");
 #endif
         return;
     }
 
     canvas_set_font(canvas, FontPrimary);
     canvas_draw_str_aligned(canvas, 32, 10, AlignCenter, AlignCenter, "Claude");
+#ifdef HID_TRANSPORT_BLE
+    canvas_draw_str_aligned(canvas, 32, 22, AlignCenter, AlignCenter,
+        state->use_ble ? "BT Remote" : "USB Remote");
+#else
     canvas_draw_str_aligned(canvas, 32, 22, AlignCenter, AlignCenter, "Remote");
+#endif
     canvas_draw_line(canvas, 4, 30, 60, 30);
 
     /* D-pad pixel art — slightly bigger outer buttons */
@@ -1076,10 +1107,16 @@ static bool handle_home_input(ClaudeRemoteState* state, InputEvent* event, ViewP
 
     switch(event->key) {
     case InputKeyOk:
+#ifdef HID_TRANSPORT_BLE
+        state->use_ble = false;
+        state->hid_connected = furi_hal_hid_is_connected();
+#endif
         state->mode = ModeRemote;
         break;
     case InputKeyRight:
 #ifdef HID_TRANSPORT_BLE
+        state->use_ble = true;
+        state->hid_connected = state->ble_connected;
         state->mode = ModeRemote;
 #else
         state->mode = ModeBlePromo;
@@ -1117,7 +1154,11 @@ static bool handle_remote_input(
         return true;
     }
 
-#ifndef HID_TRANSPORT_BLE
+#ifdef HID_TRANSPORT_BLE
+    if(!state->use_ble) {
+        state->hid_connected = furi_hal_hid_is_connected();
+    }
+#else
     state->hid_connected = furi_hal_hid_is_connected();
 #endif
     if(!state->hid_connected) return true;
@@ -1336,23 +1377,20 @@ static int32_t claude_remote_main(void* p) {
     Gui* gui = furi_record_open(RECORD_GUI);
     gui_add_view_port(gui, view_port, GuiLayerFullscreen);
 
+    /* Init USB HID (both builds) */
+    state->usb_prev = furi_hal_usb_get_config();
+    furi_hal_usb_unlock();
+    furi_hal_usb_set_config(&usb_hid, NULL);
+
 #ifdef HID_TRANSPORT_BLE
+    /* Also init BLE HID */
     state->bt = furi_record_open(RECORD_BT);
     bt_disconnect(state->bt);
     furi_delay_ms(200);
     state->ble_profile = bt_profile_start(state->bt, ble_profile_hid, NULL);
     bt_set_status_changed_callback(state->bt, bt_status_callback, state);
-    FURI_LOG_I(TAG, "BLE HID profile started");
-#else
-    state->usb_prev = furi_hal_usb_get_config();
-    furi_hal_usb_unlock();
-    furi_hal_usb_set_config(&usb_hid, NULL);
+    FURI_LOG_I(TAG, "BLE + USB HID profiles started");
 #endif
-
-#ifndef HID_TRANSPORT_BLE
-    state->hid_connected = furi_hal_hid_is_connected();
-#endif
-    /* BLE: hid_connected starts false, bt_status_callback sets it true on connect */
 
     InputEvent event;
     bool running = true;
@@ -1398,7 +1436,13 @@ static int32_t claude_remote_main(void* p) {
         }
 
         if(state->mode == ModeRemote) {
-#ifndef HID_TRANSPORT_BLE
+#ifdef HID_TRANSPORT_BLE
+            if(state->use_ble) {
+                state->hid_connected = state->ble_connected;
+            } else {
+                state->hid_connected = furi_hal_hid_is_connected();
+            }
+#else
             state->hid_connected = furi_hal_hid_is_connected();
 #endif
             /* flush pending single-press after double-click timeout */
@@ -1417,14 +1461,16 @@ static int32_t claude_remote_main(void* p) {
     notification_message(notifications, &sequence_reset_rgb);
     furi_record_close(RECORD_NOTIFICATION);
 
+    /* Cleanup USB HID (both builds) */
+    furi_hal_hid_kb_release_all();
+    furi_hal_usb_set_config(state->usb_prev, NULL);
+
 #ifdef HID_TRANSPORT_BLE
+    /* Also cleanup BLE HID */
     bt_set_status_changed_callback(state->bt, NULL, NULL);
     ble_profile_hid_kb_release_all(state->ble_profile);
     bt_profile_restore_default(state->bt);
     furi_record_close(RECORD_BT);
-#else
-    furi_hal_hid_kb_release_all();
-    furi_hal_usb_set_config(state->usb_prev, NULL);
 #endif
 
     gui_remove_view_port(gui, view_port);
