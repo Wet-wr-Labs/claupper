@@ -1296,20 +1296,32 @@ static void draw_quiz_multichoice(Canvas* canvas, ClaudeRemoteState* state, cons
 
     if(state->quiz_answered) {
         bool was_correct = (state->quiz_selected == card->correct_option);
-        canvas_draw_box(canvas, 0, 38, 128, 14);
+
+        /* Modal title bar — frame only (transparent) */
+        canvas_draw_rframe(canvas, 8, 18, 112, 14, 3);
+
+        /* Result pill inside title bar */
+        const char* result_str = was_correct ? "CORRECT!" : "WRONG!";
+        int pill_w = strlen(result_str) * 7 + 10;
+        int pill_x = 64 - pill_w / 2;
+        canvas_draw_rbox(canvas, pill_x, 20, pill_w, 10, 2);
         canvas_set_color(canvas, ColorWhite);
         canvas_set_font(canvas, FontPrimary);
-        canvas_draw_str_aligned(canvas, 64, 45, AlignCenter, AlignCenter,
-            was_correct ? "CORRECT!" : "WRONG!");
+        canvas_draw_str_aligned(canvas, 64, 25, AlignCenter, AlignCenter, result_str);
         canvas_set_color(canvas, ColorBlack);
 
-        if(!was_correct) {
-            canvas_set_font(canvas, FontSecondary);
-            canvas_draw_str_aligned(canvas, 64, 56, AlignCenter, AlignCenter, card->command);
-        }
+        /* Modal body — white fill + frame */
+        canvas_set_color(canvas, ColorWhite);
+        canvas_draw_rbox(canvas, 9, 32, 110, 28, 3);
+        canvas_set_color(canvas, ColorBlack);
+        canvas_draw_rframe(canvas, 8, 31, 112, 29, 3);
 
+        /* Answer text */
         canvas_set_font(canvas, FontSecondary);
-        canvas_draw_str_aligned(canvas, 64, 62, AlignCenter, AlignBottom, "OK:Next");
+        canvas_draw_str_aligned(canvas, 64, 43, AlignCenter, AlignCenter, card->command);
+
+        /* Footer */
+        canvas_draw_str_aligned(canvas, 64, 55, AlignCenter, AlignCenter, "OK:Next");
     } else {
         const char* opts[3] = {card->option_a, card->option_b, card->option_c};
         const char* labels[3] = {"<", "^", ">"};

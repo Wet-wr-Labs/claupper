@@ -8,25 +8,25 @@ Built by [Wetware Labs](https://WetwareOfficial.com).
 
 **Remote Mode** — Control Claude Code from your Flipper. Press numbered buttons to approve, decline, or pick options. Press Enter to confirm. Trigger voice dictation. Switch terminal tabs. All one-handed, from across the room.
 
-**Manual Mode** — Browse an offline Claude Code reference guide on the Flipper's 128x64 display. Five categories, 17 sections, and a flashcard quiz to test your knowledge.
+**Manual Mode** — Browse an offline Claude Code reference guide on the Flipper's 128x64 display. Seven categories, 29 sections, and a 24-question multiple choice quiz to test your knowledge.
 
 ## Button Mapping (Remote Mode)
 
 | Button | Single Press | Double Press |
 |--------|-------------|--------------|
-| Left | `1` (approve) | Backspace |
+| Left | `1` (approve) | Clear line |
 | Up | `2` (decline) | Page Up |
-| Right | `3` (other) | Escape |
-| OK | Enter | Ctrl+Tab (switch tab) |
-| Down | F5 (voice/dictation) | — |
-| Back | Return to home | — |
+| Right | `3` (other) | Prev command |
+| OK | Enter | Cmd+` (switch window) |
+| Down | Dictation | Page Down |
+| Back | Flip screen / home | — |
 
 ## Two Builds
 
 | Build | Firmware | Transport | Name on Flipper |
 |-------|----------|-----------|-----------------|
-| `claude_remote_usb` | Stock | USB HID | Claude Remote USB |
-| `claude_remote_ble` | Momentum / Unleashed | Bluetooth HID | Claupper |
+| `claude_remote_usb` | Stock | USB HID | Claupper USB |
+| `claude_remote_ble` | Momentum / Unleashed | Bluetooth HID | Claupper BLE |
 
 The BLE version is the primary build — wireless control, no cable needed.
 
@@ -37,7 +37,7 @@ The BLE version is the primary build — wireless control, no cable needed.
 1. Install [Momentum](https://momentum-fw.dev/update) or Unleashed firmware
 2. Download `claude_remote_ble.fap` from [Releases](https://github.com/Wet-wr-Labs/claupper/releases)
 3. Copy to `SD Card/apps/Bluetooth/` on your Flipper
-4. Open from **Apps → Bluetooth → Claupper**
+4. Open from **Apps → Bluetooth → Claupper BLE**
 5. Pair via Bluetooth on your computer
 
 ### USB Version (Stock Firmware)
@@ -45,7 +45,7 @@ The BLE version is the primary build — wireless control, no cable needed.
 1. Download `claude_remote_usb.fap` from [Releases](https://github.com/Wet-wr-Labs/claupper/releases)
 2. Copy to `SD Card/apps/Bluetooth/` on your Flipper
 3. Plug Flipper into your computer via USB
-4. Open from **Apps → Bluetooth → Claude Remote USB**
+4. Open from **Apps → Bluetooth → Claupper USB**
 
 ## Claupper Mode
 
@@ -71,8 +71,9 @@ Browse offline Claude Code docs on the Flipper screen:
 - **Workspace** — Project setup, CLAUDE.md, /init, .claude/ directory
 - **Commands** — Navigation, sessions, config, debugging
 - **Tools** — File ops, search, sub-agents, web
+- **Advanced** — Hooks, MCP, permissions, headless mode
 - **Workflows** — New project, debug & test, code review
-- **Quiz** — 12-card flashcard quiz on Claude Code commands
+- **Quiz** — 24-question multiple choice quiz with answer modals
 
 ## License
 
