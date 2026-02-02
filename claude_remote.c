@@ -1716,7 +1716,7 @@ static void draw_macros(Canvas* canvas, ClaudeRemoteState* state) {
                 canvas_set_color(canvas, ColorWhite);
             }
 
-            char display[30];
+            char display[MACRO_MAX_LEN + 8];
             snprintf(display, sizeof(display), "%d. %s", idx + 1, state->macros[idx]);
             canvas_draw_str(canvas, 4, y, display);
 
