@@ -69,7 +69,6 @@ typedef struct {
 } ManualCategory;
 
 typedef enum {
-    QuizTypeFlashcard,
     QuizTypeMultiChoice,
 } QuizType;
 
@@ -665,7 +664,6 @@ static const QuizCard quiz_cards[] = {
 
 typedef struct {
     AppMode mode;
-    bool is_flipped;
     bool hid_connected;
     FuriMutex* mutex;
 
@@ -685,7 +683,6 @@ typedef struct {
 
     /* quiz */
     uint8_t quiz_index;
-    bool quiz_revealed;
     uint8_t quiz_correct;
     uint8_t quiz_total;
     uint8_t quiz_streak;
@@ -1227,7 +1224,6 @@ static void draw_manual_read(Canvas* canvas, ClaudeRemoteState* state) {
 
     /* render visible lines */
     int y = 24;
-    const char* end_check = p;
     while(*p && y < 62) {
         char line_buf[32];
         int i = 0;
@@ -1250,7 +1246,6 @@ static void draw_manual_read(Canvas* canvas, ClaudeRemoteState* state) {
     }
 
     /* nav hint */
-    UNUSED(end_check);
     canvas_draw_str_aligned(canvas, 64, 62, AlignCenter, AlignBottom, "<  >");
 }
 
@@ -1272,24 +1267,6 @@ static void draw_quiz_question(Canvas* canvas, const char* desc) {
         if(*p == '\n') p++;
         canvas_draw_str(canvas, 4, y, line_buf);
         y += 10;
-    }
-}
-
-static void draw_quiz_flashcard(Canvas* canvas, ClaudeRemoteState* state, const QuizCard* card) {
-    draw_quiz_question(canvas, card->description);
-
-    if(state->quiz_revealed) {
-        int cmd_len = strlen(card->command);
-        int box_w = cmd_len * 6 + 8;
-        int box_x = 64 - box_w / 2;
-        canvas_draw_box(canvas, box_x, 44, box_w, 12);
-        canvas_set_color(canvas, ColorWhite);
-        canvas_draw_str_aligned(canvas, 64, 50, AlignCenter, AlignCenter, card->command);
-        canvas_set_color(canvas, ColorBlack);
-
-        canvas_draw_str_aligned(canvas, 64, 62, AlignCenter, AlignBottom, "<:Knew  ^:Nope  >:Skip");
-    } else {
-        canvas_draw_str_aligned(canvas, 64, 62, AlignCenter, AlignBottom, "OK:Reveal  >:Skip");
     }
 }
 
@@ -1448,11 +1425,7 @@ static void draw_manual_quiz(Canvas* canvas, ClaudeRemoteState* state) {
 
     canvas_draw_line(canvas, 0, 13, 128, 13);
 
-    if(card->type == QuizTypeFlashcard) {
-        draw_quiz_flashcard(canvas, state, card);
-    } else {
-        draw_quiz_multichoice(canvas, state, card);
-    }
+    draw_quiz_multichoice(canvas, state, card);
 }
 
 /* ── Draw dispatcher ── */
@@ -1555,7 +1528,6 @@ static bool handle_remote_input(
     if(event->key == InputKeyBack) {
         flush_pending_single(state);
         state->mode = ModeHome;
-        state->is_flipped = false;
         view_port_set_orientation(view_port, ViewPortOrientationVertical);
         return true;
     }
@@ -1611,10 +1583,7 @@ static void handle_manual_categories(ClaudeRemoteState* state, InputEvent* event
         break;
     case InputKeyBack:
         state->mode = ModeHome;
-        view_port_set_orientation(
-            vp,
-            state->is_flipped ? ViewPortOrientationVerticalFlip :
-                                ViewPortOrientationVertical);
+        view_port_set_orientation(vp, ViewPortOrientationVertical);
         break;
     default:
         break;
@@ -1683,7 +1652,6 @@ static void quiz_start(ClaudeRemoteState* state, uint8_t count) {
     state->quiz_selecting = false;
     state->quiz_count = count;
     state->quiz_index = 0;
-    state->quiz_revealed = false;
     state->quiz_correct = 0;
     state->quiz_total = 0;
     state->quiz_streak = 0;
@@ -1719,47 +1687,8 @@ static void handle_manual_quiz(ClaudeRemoteState* state, InputEvent* event) {
     uint8_t real_index = state->quiz_order[state->quiz_index];
     const QuizCard* card = &quiz_cards[real_index];
 
-    if(card->type == QuizTypeFlashcard) {
-        /* flashcard input */
-        switch(event->key) {
-        case InputKeyOk:
-            if(!state->quiz_revealed) {
-                state->quiz_revealed = true;
-            }
-            break;
-        case InputKeyLeft:
-            if(state->quiz_revealed) {
-                state->quiz_correct++;
-                state->quiz_total++;
-                state->quiz_streak++;
-                if(state->quiz_streak > state->quiz_best_streak)
-                    state->quiz_best_streak = state->quiz_streak;
-                state->quiz_index++;
-                state->quiz_revealed = false;
-            }
-            break;
-        case InputKeyUp:
-            if(state->quiz_revealed) {
-                state->quiz_total++;
-                state->quiz_streak = 0;
-                state->quiz_index++;
-                state->quiz_revealed = false;
-            }
-            break;
-        case InputKeyRight:
-            if(state->quiz_index < state->quiz_count - 1) {
-                state->quiz_index++;
-                state->quiz_revealed = false;
-            }
-            break;
-        case InputKeyBack:
-            state->manual_view = ManualViewCategories;
-            break;
-        default:
-            break;
-        }
-    } else {
-        /* multi-choice input */
+    /* multi-choice input */
+    {
         if(state->quiz_answered) {
             if(event->key == InputKeyOk) {
                 state->quiz_index++;
