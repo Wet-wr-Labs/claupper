@@ -8,7 +8,7 @@ Built by [Wetware Labs](https://WetwareOfficial.com).
 
 Claude Code is a terminal-based AI coding assistant. It asks questions, proposes changes, and waits for your input — but you're stuck at the keyboard. Claupper lets you **control the entire conversation from a Flipper Zero**, one-handed, from across the room.
 
-Approve changes while you're reading docs on your phone. Decline from the couch. Dictate instructions by voice without touching your computer. Switch between terminal windows without alt-tabbing. Nuke an entire input line instantly when Claude goes off-track.
+Approve changes while you're reading docs on your phone. Decline from the couch. Dictate instructions by voice without touching your computer. Switch between terminal windows with Cmd+`. Nuke an entire input line instantly when Claude goes off-track.
 
 Five buttons. No keyboard required.
 
@@ -21,16 +21,16 @@ Every interaction with Claude Code boils down to choosing option 1, 2, or 3, the
 | Left | `1` (approve/yes) | **Clear entire line** |
 | Up | `2` (decline/no) | Page Up |
 | Right | `3` (other/skip) | **Previous command** (history recall) |
-| OK | Enter (confirm) | **Switch terminal window** |
+| OK | Enter (confirm) | **Cmd+`** (switch terminal window) |
 | Down | **Voice dictation** | Page Down |
-| Back | Flip screen / return home | — |
+| Back | Return home | — |
 
 ### Double-Click Actions
 
 The double-click layer is where it gets powerful:
 
 - **Clear entire line** (double-Left) — Sends `Ctrl+A` then `Ctrl+K`: jumps to the start of the line and kills everything to the end. One gesture wipes the entire input buffer. Works in any terminal, any shell.
-- **Switch terminal window** (double-OK) — Sends `Cmd+`` ` (backtick). Instantly cycles between terminal windows without touching your computer. Bounce between Claude Code and your shell, your logs, your test runner — all from the Flipper.
+- **Cmd+`** (double-OK) — Instantly cycles between terminal windows without touching your computer. Bounce between Claude Code and your shell, your logs, your test runner — all from the Flipper.
 - **Previous command** (double-Right) — Sends Up Arrow to recall the last terminal command. Re-run tests, restart servers, repeat builds.
 - **Page Up / Page Down** (double-Up / double-Down) — Scroll through long Claude Code output without reaching for your keyboard.
 
@@ -41,10 +41,6 @@ Single-press Down triggers your OS dictation service (macOS Dictation, Windows S
 ### Visual Feedback
 
 Every keypress flashes a rounded overlay on the Flipper screen showing exactly what was sent ("1", "Enter", "Dictate", "Clear", "Switch"). You always know what just happened.
-
-### Flip Screen
-
-Press Back in remote mode to flip the display 180 degrees — hold the Flipper upside-down, right-side up, whatever's comfortable. Press Back again to return home.
 
 ## Manual Mode
 
@@ -62,9 +58,9 @@ Seven categories, 29 sections:
 
 ### Quiz Mode
 
-Test your Claude Code knowledge with 24 multiple choice questions covering slash commands, CLI flags, and core concepts. Questions are shuffled each round.
+Pick your difficulty from a classic Mac-style modal: Easy (8 questions), Medium (16), or Hard (24). All multiple choice, questions shuffled each round.
 
-When you answer, a modal pops up over the question showing whether you got it right and what the correct answer is — so you learn as you go. Tracks your score, percentage, and best streak.
+When you answer, a Mac-style modal pops up over the question showing whether you got it right and the correct answer — so you learn as you go. Tracks your score, percentage, and best streak.
 
 ## Claupper Mode
 
