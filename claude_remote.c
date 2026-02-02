@@ -598,43 +598,41 @@ static const ManualCategory categories[] = {
 /* ── Quiz cards ── */
 
 static const QuizCard quiz_cards[] = {
-    /* existing flashcards */
-    {QuizTypeFlashcard, "Show help and\navailable commands",
-     "/help", NULL, NULL, NULL, 0},
-    {QuizTypeFlashcard, "Clear conversation\nhistory",
-     "/clear", NULL, NULL, NULL, 0},
-    {QuizTypeFlashcard, "Summarize context to\nreduce token usage",
-     "/compact", NULL, NULL, NULL, 0},
-    {QuizTypeFlashcard, "Open configuration\nsettings editor",
-     "/config", NULL, NULL, NULL, 0},
-    {QuizTypeFlashcard, "Show token usage\nand session cost",
-     "/cost", NULL, NULL, NULL, 0},
-    {QuizTypeFlashcard, "Diagnose setup issues\nand check API",
-     "/doctor", NULL, NULL, NULL, 0},
-    {QuizTypeFlashcard, "Create CLAUDE.md\nfor your project",
-     "/init", NULL, NULL, NULL, 0},
-    {QuizTypeFlashcard, "Review PR or\ncode changes",
-     "/review", NULL, NULL, NULL, 0},
-    {QuizTypeFlashcard, "Fix terminal display\nand rendering",
-     "/terminal-setup", NULL, NULL, NULL, 0},
-    {QuizTypeFlashcard, "Start a brand new\nsession from scratch",
-     "claude --new", NULL, NULL, NULL, 0},
-    {QuizTypeFlashcard, "Resume your previous\nconversation",
-     "claude --continue", NULL, NULL, NULL, 0},
-    {QuizTypeFlashcard, "Run a one-shot query\nwithout chat mode",
-     "claude -p \"query\"", NULL, NULL, NULL, 0},
+    /* slash-command multi-choice */
+    {QuizTypeMultiChoice, "Show help and\navailable commands",
+     "/help", "/help", "/info", "/commands", 0},
+    {QuizTypeMultiChoice, "Clear conversation\nhistory",
+     "/clear", "/reset", "/clear", "/clean", 1},
+    {QuizTypeMultiChoice, "Summarize context to\nreduce token usage",
+     "/compact", "/shrink", "/summarize", "/compact", 2},
+    {QuizTypeMultiChoice, "Open configuration\nsettings editor",
+     "/config", "/config", "/setup", "/preferences", 0},
+    {QuizTypeMultiChoice, "Show token usage\nand session cost",
+     "/cost", "/usage", "/cost", "/tokens", 1},
+    {QuizTypeMultiChoice, "Diagnose setup issues\nand check API",
+     "/doctor", "/debug", "/check", "/doctor", 2},
+    {QuizTypeMultiChoice, "Create CLAUDE.md\nfor your project",
+     "/init", "/init", "/create", "/new", 0},
+    {QuizTypeMultiChoice, "Review PR or\ncode changes",
+     "/review", "/diff", "/review", "/inspect", 1},
+    {QuizTypeMultiChoice, "Fix terminal display\nand rendering",
+     "/terminal-setup", "/fix-term", "/display", "/terminal-setup", 2},
+    {QuizTypeMultiChoice, "Start a brand new\nsession from scratch",
+     "claude --new", "--new", "--fresh", "--reset", 0},
+    {QuizTypeMultiChoice, "Resume your previous\nconversation",
+     "claude --continue", "--resume", "--continue", "--last", 1},
+    {QuizTypeMultiChoice, "Run a one-shot query\nwithout chat mode",
+     "claude -p \"query\"", "-q", "-e", "-p", 2},
+    {QuizTypeMultiChoice, "Switch AI model\nduring a chat session",
+     "/model", "/model", "/switch", "/engine", 0},
+    {QuizTypeMultiChoice, "Edit your project's\nCLAUDE.md memory file",
+     "/memory", "/memo", "/memory", "/notes", 1},
+    {QuizTypeMultiChoice, "Undo to a previous\npoint in conversation",
+     "/rewind", "/back", "/undo", "/rewind", 2},
+    {QuizTypeMultiChoice, "Generate commit msg\nand commit changes",
+     "/commit", "/commit", "/save", "/push", 0},
 
-    /* new flashcards */
-    {QuizTypeFlashcard, "Switch AI model\nduring a chat session",
-     "/model", NULL, NULL, NULL, 0},
-    {QuizTypeFlashcard, "Edit your project's\nCLAUDE.md memory file",
-     "/memory", NULL, NULL, NULL, 0},
-    {QuizTypeFlashcard, "Undo to a previous\npoint in conversation",
-     "/rewind", NULL, NULL, NULL, 0},
-    {QuizTypeFlashcard, "Generate commit msg\nand commit changes",
-     "/commit", NULL, NULL, NULL, 0},
-
-    /* multi-choice */
+    /* concept multi-choice */
     {QuizTypeMultiChoice, "Where do Skills\nfiles live?",
      ".claude/skills/",
      ".claude/skills/", "CLAUDE.md", "~/.config/claude/", 0},
@@ -971,8 +969,8 @@ static void draw_home(Canvas* canvas) {
 
     /* Down arrow → Manual */
     canvas_draw_frame(canvas, 6, 100, 14, 10);
-    canvas_draw_line(canvas, 13, 103, 10, 107);
-    canvas_draw_line(canvas, 13, 103, 16, 107);
+    canvas_draw_line(canvas, 13, 107, 10, 103);
+    canvas_draw_line(canvas, 13, 107, 16, 103);
     canvas_draw_str(canvas, 24, 108, "Manual");
 
     /* Right arrow → BT */
@@ -997,11 +995,11 @@ static void draw_ble_promo(Canvas* canvas) {
     canvas_draw_line(canvas, 0, 14, 128, 14);
 
     canvas_set_font(canvas, FontSecondary);
-    canvas_draw_str(canvas, 2, 26, "This USB version works on");
-    canvas_draw_str(canvas, 2, 36, "stock firmware. For wireless");
-    canvas_draw_str(canvas, 2, 46, "BLE, install Momentum FW:");
+    canvas_draw_str(canvas, 2, 24, "This USB version works on");
+    canvas_draw_str(canvas, 2, 34, "stock firmware. For wireless");
+    canvas_draw_str(canvas, 2, 44, "BLE, install Momentum FW:");
 
-    canvas_draw_str(canvas, 2, 60, "momentum-fw.dev/update");
+    canvas_draw_str(canvas, 2, 58, "momentum-fw.dev/update");
 }
 #endif
 
@@ -1040,7 +1038,7 @@ static void draw_remote(Canvas* canvas, ClaudeRemoteState* state) {
     canvas_draw_line(canvas, 4, 30, 60, 30);
 
     /* D-pad pixel art — slightly bigger outer buttons */
-    canvas_draw_box(canvas, 22, 52, 20, 24);       /* center filled */
+    canvas_draw_box(canvas, 21, 52, 22, 24);       /* center filled */
     canvas_draw_frame(canvas, 21, 32, 22, 23);     /* up */
     canvas_draw_frame(canvas, 0, 53, 23, 22);      /* left */
     canvas_draw_frame(canvas, 41, 53, 23, 22);     /* right */
@@ -1054,8 +1052,8 @@ static void draw_remote(Canvas* canvas, ClaudeRemoteState* state) {
 
     /* Left: "1" + checkmark */
     canvas_draw_str_aligned(canvas, 11, 59, AlignCenter, AlignCenter, "1");
-    canvas_draw_line(canvas, 6, 67, 9, 70);
-    canvas_draw_line(canvas, 9, 70, 17, 63);
+    canvas_draw_line(canvas, 5, 67, 8, 70);
+    canvas_draw_line(canvas, 8, 70, 16, 63);
 
     /* Center: Enter arrow + OK (white on black, shifted up) */
     canvas_set_color(canvas, ColorWhite);
@@ -1070,8 +1068,8 @@ static void draw_remote(Canvas* canvas, ClaudeRemoteState* state) {
     /* Right: "3" + "?" */
     canvas_set_font(canvas, FontPrimary);
     canvas_draw_str_aligned(canvas, 52, 59, AlignCenter, AlignCenter, "3");
-    canvas_set_font(canvas, FontSecondary);
-    canvas_draw_str_aligned(canvas, 52, 70, AlignCenter, AlignCenter, "?");
+    canvas_set_font(canvas, FontPrimary);
+    canvas_draw_str_aligned(canvas, 52, 69, AlignCenter, AlignCenter, "?");
 
     /* Down: Mic icon (Dictation) */
     canvas_draw_rframe(canvas, 29, 78, 6, 7, 2);
@@ -1086,10 +1084,10 @@ static void draw_remote(Canvas* canvas, ClaudeRemoteState* state) {
     /* Flash overlay: inverted bar showing what was sent */
     if(state->flash_label &&
        (furi_get_tick() - state->flash_tick) < FLASH_DURATION_TICKS) {
-        canvas_draw_box(canvas, 0, 102, 64, 26);
+        canvas_draw_rbox(canvas, 0, 100, 64, 28, 3);
         canvas_set_color(canvas, ColorWhite);
         canvas_set_font(canvas, FontPrimary);
-        canvas_draw_str_aligned(canvas, 32, 115, AlignCenter, AlignCenter, state->flash_label);
+        canvas_draw_str_aligned(canvas, 32, 114, AlignCenter, AlignCenter, state->flash_label);
         canvas_set_color(canvas, ColorBlack);
     }
 }
@@ -1140,13 +1138,13 @@ static void draw_manual_categories(Canvas* canvas, ClaudeRemoteState* state) {
 
     /* scroll indicators */
     if(first_visible > 0) {
-        canvas_draw_str_aligned(canvas, 124, 15, AlignRight, AlignTop, "^");
+        canvas_draw_str_aligned(canvas, 124, 17, AlignRight, AlignTop, "^");
     }
     if(first_visible + 3 < MENU_ITEM_COUNT) {
         canvas_draw_str_aligned(canvas, 124, 50, AlignRight, AlignBottom, "v");
     }
 
-    canvas_draw_str_aligned(canvas, 64, 62, AlignCenter, AlignBottom, "OK:open  Bk:home");
+    canvas_draw_str_aligned(canvas, 64, 62, AlignCenter, AlignBottom, "OK:Open  Bk:Home");
 }
 
 /* ── Manual: Section list (landscape 128x64) ── */
@@ -1187,13 +1185,13 @@ static void draw_manual_sections(Canvas* canvas, ClaudeRemoteState* state) {
     }
 
     if(first_visible > 0) {
-        canvas_draw_str_aligned(canvas, 124, 15, AlignRight, AlignTop, "^");
+        canvas_draw_str_aligned(canvas, 124, 17, AlignRight, AlignTop, "^");
     }
     if(first_visible + 3 < cat->section_count) {
         canvas_draw_str_aligned(canvas, 124, 50, AlignRight, AlignBottom, "v");
     }
 
-    canvas_draw_str_aligned(canvas, 64, 62, AlignCenter, AlignBottom, "OK:read  Bk:back");
+    canvas_draw_str_aligned(canvas, 64, 62, AlignCenter, AlignBottom, "OK:Read  Bk:Back");
 }
 
 /* ── Manual: Content reader (landscape 128x64) ── */
@@ -1243,7 +1241,7 @@ static void draw_manual_read(Canvas* canvas, ClaudeRemoteState* state) {
 
     /* scroll indicators */
     if(state->scroll_offset > 0) {
-        canvas_draw_str_aligned(canvas, 124, 15, AlignRight, AlignTop, "^");
+        canvas_draw_str_aligned(canvas, 124, 17, AlignRight, AlignTop, "^");
     }
     if(*p) {
         canvas_draw_str_aligned(canvas, 124, 62, AlignRight, AlignBottom, "v");
@@ -1261,8 +1259,8 @@ static void draw_manual_read(Canvas* canvas, ClaudeRemoteState* state) {
 static void draw_quiz_question(Canvas* canvas, const char* desc) {
     canvas_set_font(canvas, FontSecondary);
     const char* p = desc;
-    int y = 26;
-    while(*p && y < 40) {
+    int y = 24;
+    while(*p && y < 38) {
         char line_buf[32];
         int i = 0;
         while(*p && *p != '\n' && i < 30) {
@@ -1287,9 +1285,9 @@ static void draw_quiz_flashcard(Canvas* canvas, ClaudeRemoteState* state, const 
         canvas_draw_str_aligned(canvas, 64, 50, AlignCenter, AlignCenter, card->command);
         canvas_set_color(canvas, ColorBlack);
 
-        canvas_draw_str_aligned(canvas, 64, 62, AlignCenter, AlignBottom, "<:Knew  ^:Nope  >:skip");
+        canvas_draw_str_aligned(canvas, 64, 62, AlignCenter, AlignBottom, "<:Knew  ^:Nope  >:Skip");
     } else {
-        canvas_draw_str_aligned(canvas, 64, 62, AlignCenter, AlignBottom, "OK:reveal  >:skip");
+        canvas_draw_str_aligned(canvas, 64, 62, AlignCenter, AlignBottom, "OK:Reveal  >:Skip");
     }
 }
 
@@ -1311,7 +1309,7 @@ static void draw_quiz_multichoice(Canvas* canvas, ClaudeRemoteState* state, cons
         }
 
         canvas_set_font(canvas, FontSecondary);
-        canvas_draw_str_aligned(canvas, 64, 62, AlignCenter, AlignBottom, "OK:next");
+        canvas_draw_str_aligned(canvas, 64, 62, AlignCenter, AlignBottom, "OK:Next");
     } else {
         const char* opts[3] = {card->option_a, card->option_b, card->option_c};
         const char* labels[3] = {"<", "^", ">"};
@@ -1364,7 +1362,9 @@ static void draw_manual_quiz(Canvas* canvas, ClaudeRemoteState* state) {
                  state->quiz_best_streak);
         canvas_draw_str_aligned(canvas, 64, 50, AlignCenter, AlignCenter, streak_buf);
 
-        canvas_draw_str_aligned(canvas, 64, 62, AlignCenter, AlignBottom, "OK:retry  Bk:menu");
+        canvas_draw_rframe(canvas, 16, 22, 96, 34, 3);
+
+        canvas_draw_str_aligned(canvas, 64, 62, AlignCenter, AlignBottom, "OK:Retry  Bk:Menu");
         return;
     }
 

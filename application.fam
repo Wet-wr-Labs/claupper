@@ -6,7 +6,7 @@
 
 App(
     appid="claude_remote_usb",
-    name="Claude Remote USB",
+    name="Claupper USB",
     apptype=FlipperAppType.EXTERNAL,
     entry_point="claude_remote_usb_app",
     requires=["gui"],
@@ -22,7 +22,7 @@ App(
 
 App(
     appid="claude_remote_ble",
-    name="Claupper",
+    name="Claupper BLE",
     apptype=FlipperAppType.EXTERNAL,
     entry_point="claude_remote_ble_app",
     requires=["gui", "bt"],
