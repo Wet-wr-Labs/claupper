@@ -59,6 +59,7 @@ static const NotificationSequence sequence_solid_green = {
 
 typedef enum {
     ModeSplash,
+    ModeTour,
     ModeHome,
     ModeRemote,
     ModeManual,
@@ -737,6 +738,11 @@ typedef struct {
     /* splash screen */
     uint32_t splash_start;
 
+    /* tour */
+    uint8_t tour_page;      /* 0=ask, 1-4=content */
+    bool tour_skip;         /* "don't ask again" checkbox */
+    bool show_tour;         /* loaded from settings */
+
     /* settings */
     bool haptics_enabled;
     bool led_enabled;
@@ -778,12 +784,13 @@ static void load_settings(ClaudeRemoteState* state) {
     state->haptics_enabled = true;
     state->led_enabled = true;
     state->os_mode = 0;
+    state->show_tour = true;
 
     Storage* storage = furi_record_open(RECORD_STORAGE);
     File* file = storage_file_alloc(storage);
 
     if(storage_file_open(file, SETTINGS_PATH, FSAM_READ, FSOM_OPEN_EXISTING)) {
-        char buf[64];
+        char buf[80];
         uint16_t bytes_read = storage_file_read(file, buf, sizeof(buf) - 1);
         buf[bytes_read] = '\0';
         storage_file_close(file);
@@ -798,6 +805,8 @@ static void load_settings(ClaudeRemoteState* state) {
                 if(p[3] == 'w') state->os_mode = 1;
                 else if(p[3] == 'l') state->os_mode = 2;
                 else state->os_mode = 0;
+            } else if(strncmp(p, "tour=", 5) == 0) {
+                state->show_tour = (p[5] == '1');
             }
             while(*p && *p != '\n') p++;
             if(*p == '\n') p++;
@@ -816,11 +825,12 @@ static void save_settings(ClaudeRemoteState* state) {
     File* file = storage_file_alloc(storage);
 
     if(storage_file_open(file, SETTINGS_PATH, FSAM_WRITE, FSOM_CREATE_ALWAYS)) {
-        char buf[48];
-        int len = snprintf(buf, sizeof(buf), "haptics=%d\nled=%d\nos=%s\n",
+        char buf[64];
+        int len = snprintf(buf, sizeof(buf), "haptics=%d\nled=%d\nos=%s\ntour=%d\n",
                            state->haptics_enabled ? 1 : 0,
                            state->led_enabled ? 1 : 0,
-                           state->os_mode == 1 ? "win" : state->os_mode == 2 ? "linux" : "mac");
+                           state->os_mode == 1 ? "win" : state->os_mode == 2 ? "linux" : "mac",
+                           state->show_tour ? 1 : 0);
         if(len > 0) storage_file_write(file, buf, len);
         storage_file_close(file);
     } else {
@@ -1139,6 +1149,82 @@ static void draw_splash(Canvas* canvas) {
 
     canvas_set_font(canvas, FontSecondary);
     canvas_draw_str_aligned(canvas, 64, 58, AlignCenter, AlignCenter, "Flipper's claudepanion");
+}
+
+static void draw_tour(Canvas* canvas, ClaudeRemoteState* state) {
+    canvas_clear(canvas);
+    if(state->tour_page == 0) {
+        canvas_set_font(canvas, FontPrimary);
+        canvas_draw_str_aligned(canvas, 64, 12, AlignCenter, AlignCenter, "Quick Tour?");
+        canvas_set_font(canvas, FontSecondary);
+        canvas_draw_line(canvas, 0, 18, 128, 18);
+        canvas_draw_str_aligned(canvas, 64, 28, AlignCenter, AlignCenter, "Learn Claupper basics");
+        canvas_draw_str_aligned(canvas, 64, 38, AlignCenter, AlignCenter, "in 4 quick pages");
+        canvas_draw_rframe(canvas, 18, 44, 7, 7, 0);
+        if(state->tour_skip) {
+            canvas_draw_line(canvas, 19, 46, 23, 50);
+            canvas_draw_line(canvas, 23, 46, 19, 50);
+        }
+        canvas_draw_str(canvas, 27, 51, "Don't ask again (down)");
+        canvas_draw_str(canvas, 2, 62, "[Back] Skip");
+        canvas_draw_str_aligned(canvas, 126, 62, AlignRight, AlignBottom, "Start [OK]");
+        return;
+    }
+    char pg[8];
+    snprintf(pg, sizeof(pg), "%d/4", state->tour_page);
+    switch(state->tour_page) {
+    case 1:
+        canvas_set_font(canvas, FontPrimary);
+        canvas_draw_str(canvas, 2, 10, "Remote Control");
+        canvas_set_font(canvas, FontSecondary);
+        canvas_draw_str_aligned(canvas, 126, 10, AlignRight, AlignCenter, pg);
+        canvas_draw_line(canvas, 0, 14, 128, 14);
+        canvas_draw_str(canvas, 2, 25, "1/2/3 approve Claude");
+        canvas_draw_str(canvas, 2, 35, "Double-click = alt action");
+        canvas_draw_str(canvas, 2, 45, "Hold Back to send Esc");
+        canvas_draw_str(canvas, 2, 55, "OK+OK = switch windows");
+        canvas_draw_str_aligned(canvas, 126, 62, AlignRight, AlignBottom, "Next >");
+        break;
+    case 2:
+        canvas_set_font(canvas, FontPrimary);
+        canvas_draw_str(canvas, 2, 10, "Voice & Macros");
+        canvas_set_font(canvas, FontSecondary);
+        canvas_draw_str_aligned(canvas, 126, 10, AlignRight, AlignCenter, pg);
+        canvas_draw_line(canvas, 0, 14, 128, 14);
+        canvas_draw_str(canvas, 2, 25, "Down = voice dictation");
+        canvas_draw_str(canvas, 2, 35, "Macros auto-type cmds");
+        canvas_draw_str(canvas, 2, 45, "Edit macros.txt on SD");
+        canvas_draw_str(canvas, 2, 55, "20 defaults built in");
+        canvas_draw_str(canvas, 2, 62, "< Back");
+        canvas_draw_str_aligned(canvas, 126, 62, AlignRight, AlignBottom, "Next >");
+        break;
+    case 3:
+        canvas_set_font(canvas, FontPrimary);
+        canvas_draw_str(canvas, 2, 10, "Double-Click Guide");
+        canvas_set_font(canvas, FontSecondary);
+        canvas_draw_str_aligned(canvas, 126, 10, AlignRight, AlignCenter, pg);
+        canvas_draw_line(canvas, 0, 14, 128, 14);
+        canvas_draw_str(canvas, 2, 25, "Left+Left = clear line");
+        canvas_draw_str(canvas, 2, 35, "Up+Up = page up");
+        canvas_draw_str(canvas, 2, 45, "Right+Right = prev cmd");
+        canvas_draw_str(canvas, 2, 55, "Down+Down = page down");
+        canvas_draw_str(canvas, 2, 62, "< Back");
+        canvas_draw_str_aligned(canvas, 126, 62, AlignRight, AlignBottom, "Next >");
+        break;
+    case 4:
+        canvas_set_font(canvas, FontPrimary);
+        canvas_draw_str(canvas, 2, 10, "More Features");
+        canvas_set_font(canvas, FontSecondary);
+        canvas_draw_str_aligned(canvas, 126, 10, AlignRight, AlignCenter, pg);
+        canvas_draw_line(canvas, 0, 14, 128, 14);
+        canvas_draw_str(canvas, 2, 25, "Claude User Guide in");
+        canvas_draw_str(canvas, 2, 35, "Manual with quiz mode");
+        canvas_draw_str(canvas, 2, 45, "Set OS in Settings for");
+        canvas_draw_str(canvas, 2, 55, "correct key combos");
+        canvas_draw_str(canvas, 2, 62, "< Back");
+        canvas_draw_str_aligned(canvas, 126, 62, AlignRight, AlignBottom, "Done [OK]");
+        break;
+    }
 }
 
 static void draw_home(Canvas* canvas) {
@@ -1747,6 +1833,9 @@ static void draw_callback(Canvas* canvas, void* ctx) {
     case ModeSplash:
         draw_splash(canvas);
         break;
+    case ModeTour:
+        draw_tour(canvas, state);
+        break;
     case ModeHome:
         draw_home(canvas);
         break;
@@ -1795,6 +1884,38 @@ static void input_callback(InputEvent* input_event, void* ctx) {
 /* ══════════════════════════════════════════════
  *  Input handling
  * ══════════════════════════════════════════════ */
+
+static void tour_go_home(ClaudeRemoteState* state, ViewPort* vp) {
+    if(state->tour_skip) {
+        state->show_tour = false;
+        save_settings(state);
+    }
+    state->mode = ModeHome;
+    view_port_set_orientation(vp, ViewPortOrientationVertical);
+}
+
+static void handle_tour_input(ClaudeRemoteState* state, InputEvent* event, ViewPort* vp) {
+    if(event->type != InputTypeShort) return;
+    if(state->tour_page == 0) {
+        switch(event->key) {
+        case InputKeyOk: state->tour_page = 1; break;
+        case InputKeyUp: case InputKeyDown: state->tour_skip = !state->tour_skip; break;
+        case InputKeyBack: tour_go_home(state, vp); break;
+        default: break;
+        }
+        return;
+    }
+    switch(event->key) {
+    case InputKeyRight: if(state->tour_page < 4) state->tour_page++; break;
+    case InputKeyLeft: if(state->tour_page > 1) state->tour_page--; break;
+    case InputKeyOk:
+        if(state->tour_page < 4) state->tour_page++;
+        else tour_go_home(state, vp);
+        break;
+    case InputKeyBack: tour_go_home(state, vp); break;
+    default: break;
+    }
+}
 
 static bool handle_home_input(ClaudeRemoteState* state, InputEvent* event, ViewPort* vp) {
     if(event->type != InputTypeShort) return true;
@@ -2238,8 +2359,13 @@ static int32_t claude_remote_main(void* p) {
         /* auto-advance splash after 3 seconds, or skip on any press */
         if(state->mode == ModeSplash) {
             if(status == FuriStatusOk || (furi_get_tick() - state->splash_start) >= 3000) {
-                state->mode = ModeHome;
-                view_port_set_orientation(view_port, ViewPortOrientationVertical);
+                if(state->show_tour) {
+                    state->mode = ModeTour;
+                    state->tour_page = 0;
+                } else {
+                    state->mode = ModeHome;
+                    view_port_set_orientation(view_port, ViewPortOrientationVertical);
+                }
             }
             furi_mutex_release(state->mutex);
             view_port_update(view_port);
@@ -2250,6 +2376,9 @@ static int32_t claude_remote_main(void* p) {
             switch(state->mode) {
             case ModeSplash:
                 break; /* handled above */
+            case ModeTour:
+                handle_tour_input(state, &event, view_port);
+                break;
             case ModeHome:
                 running = handle_home_input(state, &event, view_port);
                 break;

@@ -1,0 +1,10 @@
+y
+/compact
+/commit
+fix this
+explain this error
+run the tests
+add error handling
+review for bugs
+/clear
+/status
