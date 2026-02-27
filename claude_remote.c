@@ -620,7 +620,7 @@ static const ManualCategory categories[] = {
 
 #define APP_DATA_DIR APP_DATA_PATH("")
 #define SETTINGS_PATH APP_DATA_PATH("settings.cfg")
-#define SETTINGS_COUNT 3
+#define SETTINGS_COUNT 4
 
 #define MACRO_MAX_COUNT 10
 #define MACRO_MAX_LEN 32
@@ -1389,6 +1389,12 @@ static void draw_remote(Canvas* canvas, ClaudeRemoteState* state) {
     canvas_draw_line(canvas, 32, 95, 29, 92);
     canvas_draw_line(canvas, 32, 95, 35, 92);
 
+    /* Legend below d-pad — covered by flash overlay when active */
+    canvas_set_font(canvas, FontSecondary);
+    canvas_draw_str_aligned(canvas, 32, 104, AlignCenter, AlignCenter, "1 Approve");
+    canvas_draw_str_aligned(canvas, 32, 114, AlignCenter, AlignCenter, "2 Decline");
+    canvas_draw_str_aligned(canvas, 32, 124, AlignCenter, AlignCenter, "3 Other");
+
     /* Flash overlay: inverted bar showing what was sent */
     if(state->flash_label &&
        (furi_get_tick() - state->flash_tick) < FLASH_DURATION_TICKS) {
@@ -1748,10 +1754,10 @@ static void draw_settings(Canvas* canvas, ClaudeRemoteState* state) {
 
     canvas_set_font(canvas, FontSecondary);
 
-    const char* labels[SETTINGS_COUNT] = {"Haptics", "LED", "OS"};
+    const char* labels[SETTINGS_COUNT] = {"Haptics", "LED", "OS", "Tour"};
 
     for(int i = 0; i < SETTINGS_COUNT; i++) {
-        int y = 26 + i * 13;
+        int y = 24 + i * 11;
         bool selected = (i == state->settings_index);
 
         if(selected) {
@@ -1763,7 +1769,8 @@ static void draw_settings(Canvas* canvas, ClaudeRemoteState* state) {
         const char* val_str;
         if(i == 0) val_str = state->haptics_enabled ? "[ON]" : "[OFF]";
         else if(i == 1) val_str = state->led_enabled ? "[ON]" : "[OFF]";
-        else val_str = state->os_mode == 1 ? "[Win]" : state->os_mode == 2 ? "[Linux]" : "[Mac]";
+        else if(i == 2) val_str = state->os_mode == 1 ? "[Win]" : state->os_mode == 2 ? "[Linux]" : "[Mac]";
+        else val_str = state->show_tour ? "[ON]" : "[OFF]";
         canvas_draw_str_aligned(canvas, 110, y, AlignRight, AlignBottom, val_str);
     }
 
@@ -2249,6 +2256,8 @@ static bool handle_settings_input(ClaudeRemoteState* state, InputEvent* event, V
             state->led_enabled = !state->led_enabled;
         } else if(state->settings_index == 2) {
             state->os_mode = (state->os_mode + 1) % 3;
+        } else if(state->settings_index == 3) {
+            state->show_tour = !state->show_tour;
         }
         save_settings(state);
         break;

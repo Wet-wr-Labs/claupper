@@ -1,10 +1,10 @@
-y
 /compact
-/commit
+/rename
+/resume
+/review
+/remote-control
+claude --dangerously-skip-permissions --resume
 fix this
 explain this error
 run the tests
-add error handling
-review for bugs
-/clear
-/status
+/commit
