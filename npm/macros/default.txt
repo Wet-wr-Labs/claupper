@@ -3,7 +3,7 @@
 /resume
 /review
 /remote-control
-claude --dangerously-skip-permissions --resume
+claude --dangerously-skip-permissions --continue
 fix this
 explain this error
 run the tests

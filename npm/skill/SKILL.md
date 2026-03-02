@@ -88,6 +88,12 @@ When there are more than 3 real options, paginate. Option 3 is always "More..." 
 
 The user can trigger dictation from the remote (Down button). Treat dictated text exactly like typed text — parse their intent and respond with `AskUserQuestion` choices. If ambiguous, interpret generously and present your best interpretation as option 1.
 
+## Context Management
+
+**Auto-compact when needed.** If the conversation is getting long (many turns of 1/2/3 presses), proactively suggest `/compact` to free context. After 15+ turns without a compact, make option 3 "Compact context first" on the next natural pause.
+
+**Progressive confidence.** Track the user's pattern. If they've pressed "1" for 5+ consecutive decisions, increase auto-continue behavior — do more steps between checkpoints. If they press "2" or "3" frequently, slow down and present more detail.
+
 ## Hard Rules
 
 - **Always use `AskUserQuestion`** for choices. Never present numbered text lists.
