@@ -769,6 +769,11 @@ typedef struct {
     bool right_held;
     bool down_held;
     uint32_t hotkeys_tick;
+
+    /* hold-left backspace repeat */
+    bool left_holding;
+    uint32_t left_hold_start;
+    uint32_t left_repeat_tick;
 } ClaudeRemoteState;
 
 /* ── Utility ── */
@@ -1265,10 +1270,11 @@ static void draw_tour(Canvas* canvas, ClaudeRemoteState* state) {
         canvas_set_font(canvas, FontSecondary);
         canvas_draw_str_aligned(canvas, 126, 10, AlignRight, AlignCenter, pg);
         canvas_draw_line(canvas, 0, 14, 128, 14);
-        canvas_draw_str(canvas, 2, 25, "1/2/3 approve Claude");
-        canvas_draw_str(canvas, 2, 35, "Double-click = alt action");
-        canvas_draw_str(canvas, 2, 45, "Hold Back to send Esc");
-        canvas_draw_str(canvas, 2, 55, "OK+OK = switch windows");
+        canvas_draw_str(canvas, 2, 24, "1/2/3 approve Claude");
+        canvas_draw_str(canvas, 2, 33, "Double-click = alt action");
+        canvas_draw_str(canvas, 2, 42, "Hold Back to send Esc");
+        canvas_draw_str(canvas, 2, 51, "OK+OK = switch windows");
+        canvas_draw_line(canvas, 0, 54, 128, 54);
         canvas_draw_str_aligned(canvas, 126, 62, AlignRight, AlignBottom, "Next >");
         break;
     case 2:
@@ -1277,10 +1283,11 @@ static void draw_tour(Canvas* canvas, ClaudeRemoteState* state) {
         canvas_set_font(canvas, FontSecondary);
         canvas_draw_str_aligned(canvas, 126, 10, AlignRight, AlignCenter, pg);
         canvas_draw_line(canvas, 0, 14, 128, 14);
-        canvas_draw_str(canvas, 2, 25, "Down = voice dictation");
-        canvas_draw_str(canvas, 2, 35, "Macros auto-type cmds");
-        canvas_draw_str(canvas, 2, 45, "Edit macros.txt on SD");
-        canvas_draw_str(canvas, 2, 55, "20 defaults built in");
+        canvas_draw_str(canvas, 2, 24, "Down = voice dictation");
+        canvas_draw_str(canvas, 2, 33, "Macros auto-type cmds");
+        canvas_draw_str(canvas, 2, 42, "Edit macros.txt on SD");
+        canvas_draw_str(canvas, 2, 51, "20 defaults built in");
+        canvas_draw_line(canvas, 0, 54, 128, 54);
         canvas_draw_str(canvas, 2, 62, "< Back");
         canvas_draw_str_aligned(canvas, 126, 62, AlignRight, AlignBottom, "Next >");
         break;
@@ -1290,10 +1297,11 @@ static void draw_tour(Canvas* canvas, ClaudeRemoteState* state) {
         canvas_set_font(canvas, FontSecondary);
         canvas_draw_str_aligned(canvas, 126, 10, AlignRight, AlignCenter, pg);
         canvas_draw_line(canvas, 0, 14, 128, 14);
-        canvas_draw_str(canvas, 2, 25, "Left+Left = clear line");
-        canvas_draw_str(canvas, 2, 35, "Up+Up = page up");
-        canvas_draw_str(canvas, 2, 45, "Right+Right = prev cmd");
-        canvas_draw_str(canvas, 2, 55, "Down+Down = page down");
+        canvas_draw_str(canvas, 2, 24, "Left+Left = clear line");
+        canvas_draw_str(canvas, 2, 33, "Up+Up = page up");
+        canvas_draw_str(canvas, 2, 42, "Right+Right = prev cmd");
+        canvas_draw_str(canvas, 2, 51, "Down+Down = page down");
+        canvas_draw_line(canvas, 0, 54, 128, 54);
         canvas_draw_str(canvas, 2, 62, "< Back");
         canvas_draw_str_aligned(canvas, 126, 62, AlignRight, AlignBottom, "Next >");
         break;
@@ -1303,10 +1311,11 @@ static void draw_tour(Canvas* canvas, ClaudeRemoteState* state) {
         canvas_set_font(canvas, FontSecondary);
         canvas_draw_str_aligned(canvas, 126, 10, AlignRight, AlignCenter, pg);
         canvas_draw_line(canvas, 0, 14, 128, 14);
-        canvas_draw_str(canvas, 2, 25, "Claude User Guide in");
-        canvas_draw_str(canvas, 2, 35, "Manual with quiz mode");
-        canvas_draw_str(canvas, 2, 45, "Set OS in Settings for");
-        canvas_draw_str(canvas, 2, 55, "correct key combos");
+        canvas_draw_str(canvas, 2, 24, "Claude User Guide in");
+        canvas_draw_str(canvas, 2, 33, "Manual with quiz mode");
+        canvas_draw_str(canvas, 2, 42, "Set OS in Settings for");
+        canvas_draw_str(canvas, 2, 51, "correct key combos");
+        canvas_draw_line(canvas, 0, 54, 128, 54);
         canvas_draw_str(canvas, 2, 62, "< Back");
         canvas_draw_str_aligned(canvas, 126, 62, AlignRight, AlignBottom, "Done [OK]");
         break;
@@ -1433,17 +1442,15 @@ static void draw_remote(Canvas* canvas, ClaudeRemoteState* state) {
         canvas_set_font(canvas, FontSecondary);
         canvas_draw_str_aligned(canvas, 32, 28, AlignCenter, AlignCenter, "Double Tap:");
 
-        canvas_draw_str(canvas, 6, 42, "< Clear");
-        canvas_draw_str(canvas, 6, 54, "> Previous");
+        canvas_draw_str(canvas, 6, 42, "< Clear line");
+        canvas_draw_str(canvas, 6, 54, "> Previous cmd");
         canvas_draw_str(canvas, 6, 66, "^ Page Up");
         canvas_draw_str(canvas, 6, 78, "v Page Down");
-        canvas_draw_str(canvas, 6, 90, "o Switch");
+        canvas_draw_str(canvas, 6, 90, "o Switch win");
 
-        canvas_draw_str_aligned(canvas, 32, 104, AlignCenter, AlignCenter, "Hold Back:");
-        canvas_draw_str_aligned(canvas, 32, 114, AlignCenter, AlignCenter, "Escape");
-
-        canvas_set_font(canvas, FontSecondary);
-        canvas_draw_str_aligned(canvas, 32, 126, AlignCenter, AlignCenter, "press any key");
+        canvas_draw_str_aligned(canvas, 32, 104, AlignCenter, AlignCenter, "Hold:");
+        canvas_draw_str(canvas, 6, 114, "< Backspace");
+        canvas_draw_str(canvas, 6, 122, "Bk Escape");
 
         canvas_set_color(canvas, ColorBlack);
         return;
@@ -1502,7 +1509,7 @@ static void draw_remote(Canvas* canvas, ClaudeRemoteState* state) {
     canvas_draw_str_aligned(canvas, 32, 64, AlignCenter, AlignCenter, "Voice");
 
     /* ══════ HINT LINE ══════ */
-    canvas_draw_str_aligned(canvas, 32, 122, AlignCenter, AlignCenter, "3+Dn: hotkeys");
+    canvas_draw_str_aligned(canvas, 32, 122, AlignCenter, AlignCenter, "3+Voice: hotkeys");
 
     /* ══════ FLASH OVERLAY ══════ */
     if(state->flash_label &&
@@ -1561,6 +1568,7 @@ static void draw_manual_categories(Canvas* canvas, ClaudeRemoteState* state) {
 
     draw_scrollbar(canvas, 125, 15, 52, state->cat_index, MENU_ITEM_COUNT);
 
+    canvas_draw_line(canvas, 0, 54, 128, 54);
     canvas_draw_str_aligned(canvas, 64, 62, AlignCenter, AlignBottom, "OK:Open  Bk:Home");
 }
 
@@ -1603,6 +1611,7 @@ static void draw_manual_sections(Canvas* canvas, ClaudeRemoteState* state) {
 
     draw_scrollbar(canvas, 125, 15, 52, state->section_index, cat->section_count);
 
+    canvas_draw_line(canvas, 0, 54, 128, 54);
     canvas_draw_str_aligned(canvas, 64, 62, AlignCenter, AlignBottom, "OK:Read  Bk:Back");
 }
 
@@ -1635,9 +1644,9 @@ static void draw_manual_read(Canvas* canvas, ClaudeRemoteState* state) {
         p++;
     }
 
-    /* render visible lines */
+    /* render visible lines (clip above separator at y=54) */
     int y = 24;
-    while(*p && y < 62) {
+    while(*p && y < 53) {
         char line_buf[32];
         int i = 0;
         while(*p && *p != '\n' && i < 30) {
@@ -1655,11 +1664,12 @@ static void draw_manual_read(Canvas* canvas, ClaudeRemoteState* state) {
     for(const char* c = sec->content; *c; c++) {
         if(*c == '\n') total_lines++;
     }
-    if(total_lines > 4) {
-        draw_scrollbar(canvas, 125, 15, 60, state->scroll_offset, total_lines - 3);
+    if(total_lines > 3) {
+        draw_scrollbar(canvas, 125, 15, 52, state->scroll_offset, total_lines - 2);
     }
 
     /* nav hint */
+    canvas_draw_line(canvas, 0, 54, 128, 54);
     canvas_draw_str_aligned(canvas, 64, 62, AlignCenter, AlignBottom, "<  >");
 }
 
@@ -1932,10 +1942,10 @@ static void draw_bt_pairing(Canvas* canvas, ClaudeRemoteState* state) {
     canvas_draw_str(canvas, 16, 28, status_str);
 
     /* Instructions */
-    canvas_draw_str(canvas, 2, 40, "On your device, open BT");
-    canvas_draw_str(canvas, 2, 50, "settings & connect to:");
+    canvas_draw_str(canvas, 2, 36, "Pair your device to:");
+
     canvas_set_font(canvas, FontPrimary);
-    canvas_draw_str_aligned(canvas, 64, 60, AlignCenter, AlignBottom, "Flipper Zero");
+    canvas_draw_str_aligned(canvas, 64, 50, AlignCenter, AlignBottom, "Flipper Zero");
 
     /* Footer */
     canvas_set_font(canvas, FontSecondary);
@@ -2195,6 +2205,11 @@ static bool handle_remote_input(
     if(event->type == InputTypePress) {
         if(event->key == InputKeyRight) state->right_held = true;
         if(event->key == InputKeyDown) state->down_held = true;
+        if(event->key == InputKeyLeft) {
+            state->left_holding = true;
+            state->left_hold_start = furi_get_tick();
+            state->left_repeat_tick = 0;
+        }
         if(state->right_held && state->down_held && !state->show_hotkeys) {
             state->show_hotkeys = true;
             state->hotkeys_tick = furi_get_tick();
@@ -2205,6 +2220,28 @@ static bool handle_remote_input(
     if(event->type == InputTypeRelease) {
         if(event->key == InputKeyRight) state->right_held = false;
         if(event->key == InputKeyDown) state->down_held = false;
+        if(event->key == InputKeyLeft) state->left_holding = false;
+        return true;
+    }
+
+    /* ── Hold Left = backspace repeat with acceleration ── */
+    if(event->key == InputKeyLeft && state->left_holding &&
+       (event->type == InputTypeLong || event->type == InputTypeRepeat)) {
+        /* Cancel double-click pending for Left (don't send "1") */
+        if(state->dc_pending && state->dc_key == InputKeyLeft) {
+            state->dc_pending = false;
+        }
+        if(state->hid_connected) {
+            uint32_t now = furi_get_tick();
+            uint32_t held_ms = now - state->left_hold_start;
+            /* 250ms repeat initially, 100ms after 2 seconds (60% faster) */
+            uint32_t interval = (held_ms > 2000) ? 100 : 250;
+            if(state->left_repeat_tick == 0 ||
+               (now - state->left_repeat_tick) >= interval) {
+                SEND_HID(state, HID_KEYBOARD_DELETE);
+                state->left_repeat_tick = now;
+            }
+        }
         return true;
     }
 
