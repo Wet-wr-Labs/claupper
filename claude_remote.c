@@ -1474,7 +1474,7 @@ static void draw_remote(Canvas* canvas, ClaudeRemoteState* state) {
     canvas_draw_line(canvas, 21, 40, 21, 46);
 
     /* OK button (filled disc in center) */
-    canvas_draw_disc(canvas, 32, 43, 6);
+    canvas_draw_disc(canvas, 32, 43, 7);
     canvas_set_color(canvas, ColorWhite);
     canvas_draw_str_aligned(canvas, 32, 43, AlignCenter, AlignCenter, "OK");
     canvas_set_color(canvas, ColorBlack);
@@ -1497,8 +1497,10 @@ static void draw_remote(Canvas* canvas, ClaudeRemoteState* state) {
     canvas_draw_rframe(canvas, 17, 58, 30, 11, 3);
     canvas_draw_str_aligned(canvas, 32, 64, AlignCenter, AlignCenter, "Voice");
 
-    /* ══════ HINT LINE ══════ */
-    canvas_draw_str_aligned(canvas, 32, 122, AlignCenter, AlignCenter, "3+Voice: hotkeys");
+    /* ══════ HINT BAR ══════ */
+    canvas_draw_line(canvas, 8, 74, 56, 74);
+    canvas_draw_str_aligned(canvas, 32, 83, AlignCenter, AlignCenter, "Hotkeys");
+    canvas_draw_str_aligned(canvas, 32, 93, AlignCenter, AlignCenter, "Right+Down");
 
     /* ══════ FLASH OVERLAY ══════ */
     if(state->flash_label &&
