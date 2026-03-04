@@ -1274,8 +1274,6 @@ static void draw_tour(Canvas* canvas, ClaudeRemoteState* state) {
         canvas_draw_str(canvas, 2, 33, "Double-click = alt action");
         canvas_draw_str(canvas, 2, 42, "Hold Back to send Esc");
         canvas_draw_str(canvas, 2, 51, "OK+OK = switch windows");
-        canvas_draw_line(canvas, 0, 54, 128, 54);
-        canvas_draw_str_aligned(canvas, 126, 62, AlignRight, AlignBottom, "Next >");
         break;
     case 2:
         canvas_set_font(canvas, FontPrimary);
@@ -1287,9 +1285,6 @@ static void draw_tour(Canvas* canvas, ClaudeRemoteState* state) {
         canvas_draw_str(canvas, 2, 33, "Macros auto-type cmds");
         canvas_draw_str(canvas, 2, 42, "Edit macros.txt on SD");
         canvas_draw_str(canvas, 2, 51, "20 defaults built in");
-        canvas_draw_line(canvas, 0, 54, 128, 54);
-        canvas_draw_str(canvas, 2, 62, "< Back");
-        canvas_draw_str_aligned(canvas, 126, 62, AlignRight, AlignBottom, "Next >");
         break;
     case 3:
         canvas_set_font(canvas, FontPrimary);
@@ -1301,9 +1296,6 @@ static void draw_tour(Canvas* canvas, ClaudeRemoteState* state) {
         canvas_draw_str(canvas, 2, 33, "Up+Up = page up");
         canvas_draw_str(canvas, 2, 42, "Right+Right = prev cmd");
         canvas_draw_str(canvas, 2, 51, "Down+Down = page down");
-        canvas_draw_line(canvas, 0, 54, 128, 54);
-        canvas_draw_str(canvas, 2, 62, "< Back");
-        canvas_draw_str_aligned(canvas, 126, 62, AlignRight, AlignBottom, "Next >");
         break;
     case 4:
         canvas_set_font(canvas, FontPrimary);
@@ -1315,9 +1307,6 @@ static void draw_tour(Canvas* canvas, ClaudeRemoteState* state) {
         canvas_draw_str(canvas, 2, 33, "Manual with quiz mode");
         canvas_draw_str(canvas, 2, 42, "Set OS in Settings for");
         canvas_draw_str(canvas, 2, 51, "correct key combos");
-        canvas_draw_line(canvas, 0, 54, 128, 54);
-        canvas_draw_str(canvas, 2, 62, "< Back");
-        canvas_draw_str_aligned(canvas, 126, 62, AlignRight, AlignBottom, "Done [OK]");
         break;
     }
 }
@@ -1566,10 +1555,7 @@ static void draw_manual_categories(Canvas* canvas, ClaudeRemoteState* state) {
         }
     }
 
-    draw_scrollbar(canvas, 125, 15, 52, state->cat_index, MENU_ITEM_COUNT);
-
-    canvas_draw_line(canvas, 0, 54, 128, 54);
-    canvas_draw_str_aligned(canvas, 64, 62, AlignCenter, AlignBottom, "OK:Open  Bk:Home");
+    draw_scrollbar(canvas, 125, 15, 62, state->cat_index, MENU_ITEM_COUNT);
 }
 
 /* ── Manual: Section list (landscape 128x64) ── */
@@ -1609,10 +1595,7 @@ static void draw_manual_sections(Canvas* canvas, ClaudeRemoteState* state) {
         }
     }
 
-    draw_scrollbar(canvas, 125, 15, 52, state->section_index, cat->section_count);
-
-    canvas_draw_line(canvas, 0, 54, 128, 54);
-    canvas_draw_str_aligned(canvas, 64, 62, AlignCenter, AlignBottom, "OK:Read  Bk:Back");
+    draw_scrollbar(canvas, 125, 15, 62, state->section_index, cat->section_count);
 }
 
 /* ── Manual: Content reader (landscape 128x64) ── */
@@ -1644,9 +1627,9 @@ static void draw_manual_read(Canvas* canvas, ClaudeRemoteState* state) {
         p++;
     }
 
-    /* render visible lines (clip above separator at y=54) */
+    /* render visible lines */
     int y = 24;
-    while(*p && y < 53) {
+    while(*p && y < 64) {
         char line_buf[32];
         int i = 0;
         while(*p && *p != '\n' && i < 30) {
@@ -1664,13 +1647,11 @@ static void draw_manual_read(Canvas* canvas, ClaudeRemoteState* state) {
     for(const char* c = sec->content; *c; c++) {
         if(*c == '\n') total_lines++;
     }
-    if(total_lines > 3) {
-        draw_scrollbar(canvas, 125, 15, 52, state->scroll_offset, total_lines - 2);
+    if(total_lines > 4) {
+        draw_scrollbar(canvas, 125, 15, 62, state->scroll_offset, total_lines - 3);
     }
 
-    /* nav hint */
-    canvas_draw_line(canvas, 0, 54, 128, 54);
-    canvas_draw_str_aligned(canvas, 64, 62, AlignCenter, AlignBottom, "<  >");
+    /* no bottom nav — user uses Left/Right to navigate sections */
 }
 
 /* ── Manual: Quiz mode (landscape 128x64) ── */
@@ -1818,8 +1799,6 @@ static void draw_manual_quiz(Canvas* canvas, ClaudeRemoteState* state) {
         canvas_draw_str_aligned(canvas, 64, 50, AlignCenter, AlignCenter, streak_buf);
 
         canvas_draw_rframe(canvas, 16, 22, 96, 34, 3);
-
-        canvas_draw_str_aligned(canvas, 64, 62, AlignCenter, AlignBottom, "OK:Retry  Bk:Menu");
         return;
     }
 
@@ -1904,10 +1883,7 @@ static void draw_settings(Canvas* canvas, ClaudeRemoteState* state) {
         }
     }
 
-    draw_scrollbar(canvas, 125, 15, 52, state->settings_index, SETTINGS_COUNT);
-
-    canvas_draw_line(canvas, 0, 54, 128, 54);
-    canvas_draw_str_aligned(canvas, 64, 62, AlignCenter, AlignBottom, "OK:Toggle  Bk:Save");
+    draw_scrollbar(canvas, 125, 15, 62, state->settings_index, SETTINGS_COUNT);
 }
 
 /* ── BT Pairing sub-screen (landscape 128x64) ── */
@@ -1947,10 +1923,6 @@ static void draw_bt_pairing(Canvas* canvas, ClaudeRemoteState* state) {
     canvas_set_font(canvas, FontPrimary);
     canvas_draw_str_aligned(canvas, 64, 50, AlignCenter, AlignBottom, "Flipper Zero");
 
-    /* Footer */
-    canvas_set_font(canvas, FontSecondary);
-    canvas_draw_line(canvas, 0, 54, 128, 54);
-    canvas_draw_str_aligned(canvas, 64, 62, AlignCenter, AlignBottom, "OK:Forget  Bk:Back");
 }
 #endif
 
@@ -2022,11 +1994,8 @@ static void draw_macros(Canvas* canvas, ClaudeRemoteState* state) {
             }
         }
 
-        draw_scrollbar(canvas, 125, 15, 52, state->macro_index, state->macro_count);
+        draw_scrollbar(canvas, 125, 15, 62, state->macro_index, state->macro_count);
     }
-
-    canvas_draw_line(canvas, 0, 54, 128, 54);
-    canvas_draw_str_aligned(canvas, 64, 62, AlignCenter, AlignBottom, "OK:Send  Bk:Home");
 }
 
 /* ── Draw dispatcher ── */
