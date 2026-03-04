@@ -614,12 +614,12 @@ static const ManualCategory categories[] = {
     {"Headless & CI", headless_sections, 3},
 };
 
-#define CATEGORY_COUNT 7
+#define CATEGORY_COUNT  7
 #define MENU_ITEM_COUNT (CATEGORY_COUNT + 1) /* +1 for Quiz */
 
 /* ── Settings & Macros constants ── */
 
-#define APP_DATA_DIR APP_DATA_PATH("")
+#define APP_DATA_DIR  APP_DATA_PATH("")
 #define SETTINGS_PATH APP_DATA_PATH("settings.cfg")
 #ifdef HID_TRANSPORT_BLE
 #define SETTINGS_COUNT 6
@@ -628,71 +628,177 @@ static const ManualCategory categories[] = {
 #endif
 
 #define MACRO_MAX_COUNT 10
-#define MACRO_MAX_LEN 64
-#define MACROS_PATH APP_DATA_PATH("macros.txt")
+#define MACRO_MAX_LEN   64
+#define MACROS_PATH     APP_DATA_PATH("macros.txt")
 
 /* ── Quiz cards ── */
 
 static const QuizCard quiz_cards[] = {
     /* slash-command multi-choice */
-    {QuizTypeMultiChoice, "Show help and\navailable commands",
-     "/help", "/help", "/info", "/commands", 0},
-    {QuizTypeMultiChoice, "Clear conversation\nhistory",
-     "/clear", "/reset", "/clear", "/clean", 1},
-    {QuizTypeMultiChoice, "Summarize context to\nreduce token usage",
-     "/compact", "/shrink", "/summarize", "/compact", 2},
-    {QuizTypeMultiChoice, "Open configuration\nsettings editor",
-     "/config", "/config", "/setup", "/preferences", 0},
-    {QuizTypeMultiChoice, "Show token usage\nand session cost",
-     "/cost", "/usage", "/cost", "/tokens", 1},
-    {QuizTypeMultiChoice, "Diagnose setup issues\nand check API",
-     "/doctor", "/debug", "/check", "/doctor", 2},
-    {QuizTypeMultiChoice, "Create CLAUDE.md\nfor your project",
-     "/init", "/init", "/create", "/new", 0},
-    {QuizTypeMultiChoice, "Review PR or\ncode changes",
-     "/review", "/diff", "/review", "/inspect", 1},
-    {QuizTypeMultiChoice, "Fix terminal display\nand rendering",
-     "/terminal-setup", "/fix-term", "/display", "/terminal-setup", 2},
-    {QuizTypeMultiChoice, "Start a brand new\nsession from scratch",
-     "claude --new", "--new", "--fresh", "--reset", 0},
-    {QuizTypeMultiChoice, "Resume your previous\nconversation",
-     "claude --resume", "--resume", "--continue", "--last", 0},
-    {QuizTypeMultiChoice, "Run a one-shot query\nwithout chat mode",
-     "claude -p \"query\"", "-q", "-e", "-p", 2},
-    {QuizTypeMultiChoice, "Switch AI model\nduring a chat session",
-     "/model", "/model", "/switch", "/engine", 0},
-    {QuizTypeMultiChoice, "Edit your project's\nCLAUDE.md memory file",
-     "/memory", "/memo", "/memory", "/notes", 1},
-    {QuizTypeMultiChoice, "Undo to a previous\npoint in conversation",
-     "/rewind", "/back", "/undo", "/rewind", 2},
-    {QuizTypeMultiChoice, "Generate commit msg\nand commit changes",
-     "/commit", "/commit", "/save", "/push", 0},
+    {QuizTypeMultiChoice,
+     "Show help and\navailable commands",
+     "/help",
+     "/help",
+     "/info",
+     "/commands",
+     0},
+    {QuizTypeMultiChoice, "Clear conversation\nhistory", "/clear", "/reset", "/clear", "/clean", 1},
+    {QuizTypeMultiChoice,
+     "Summarize context to\nreduce token usage",
+     "/compact",
+     "/shrink",
+     "/summarize",
+     "/compact",
+     2},
+    {QuizTypeMultiChoice,
+     "Open configuration\nsettings editor",
+     "/config",
+     "/config",
+     "/setup",
+     "/preferences",
+     0},
+    {QuizTypeMultiChoice,
+     "Show token usage\nand session cost",
+     "/cost",
+     "/usage",
+     "/cost",
+     "/tokens",
+     1},
+    {QuizTypeMultiChoice,
+     "Diagnose setup issues\nand check API",
+     "/doctor",
+     "/debug",
+     "/check",
+     "/doctor",
+     2},
+    {QuizTypeMultiChoice,
+     "Create CLAUDE.md\nfor your project",
+     "/init",
+     "/init",
+     "/create",
+     "/new",
+     0},
+    {QuizTypeMultiChoice,
+     "Review PR or\ncode changes",
+     "/review",
+     "/diff",
+     "/review",
+     "/inspect",
+     1},
+    {QuizTypeMultiChoice,
+     "Fix terminal display\nand rendering",
+     "/terminal-setup",
+     "/fix-term",
+     "/display",
+     "/terminal-setup",
+     2},
+    {QuizTypeMultiChoice,
+     "Start a brand new\nsession from scratch",
+     "claude --new",
+     "--new",
+     "--fresh",
+     "--reset",
+     0},
+    {QuizTypeMultiChoice,
+     "Resume your previous\nconversation",
+     "claude --resume",
+     "--resume",
+     "--continue",
+     "--last",
+     0},
+    {QuizTypeMultiChoice,
+     "Run a one-shot query\nwithout chat mode",
+     "claude -p \"query\"",
+     "-q",
+     "-e",
+     "-p",
+     2},
+    {QuizTypeMultiChoice,
+     "Switch AI model\nduring a chat session",
+     "/model",
+     "/model",
+     "/switch",
+     "/engine",
+     0},
+    {QuizTypeMultiChoice,
+     "Edit your project's\nCLAUDE.md memory file",
+     "/memory",
+     "/memo",
+     "/memory",
+     "/notes",
+     1},
+    {QuizTypeMultiChoice,
+     "Undo to a previous\npoint in conversation",
+     "/rewind",
+     "/back",
+     "/undo",
+     "/rewind",
+     2},
+    {QuizTypeMultiChoice,
+     "Generate commit msg\nand commit changes",
+     "/commit",
+     "/commit",
+     "/save",
+     "/push",
+     0},
 
     /* concept multi-choice */
-    {QuizTypeMultiChoice, "Where do Skills\nfiles live?",
+    {QuizTypeMultiChoice,
+     "Where do Skills\nfiles live?",
      ".claude/skills/",
-     ".claude/skills/", "CLAUDE.md", "~/.config/claude/", 0},
-    {QuizTypeMultiChoice, "Which model is the\ndefault for Claude?",
+     ".claude/skills/",
+     "CLAUDE.md",
+     "~/.config/claude/",
+     0},
+    {QuizTypeMultiChoice,
+     "Which model is the\ndefault for Claude?",
      "Sonnet",
-     "Opus", "Sonnet", "Haiku", 1},
-    {QuizTypeMultiChoice, "What does the -p\nflag do?",
+     "Opus",
+     "Sonnet",
+     "Haiku",
+     1},
+    {QuizTypeMultiChoice,
+     "What does the -p\nflag do?",
      "Print mode (no chat)",
-     "Print mode", "Profile mode", "Plugin mode", 0},
-    {QuizTypeMultiChoice, "Settings hierarchy\nhighest priority?",
+     "Print mode",
+     "Profile mode",
+     "Plugin mode",
+     0},
+    {QuizTypeMultiChoice,
+     "Settings hierarchy\nhighest priority?",
      "Project settings",
-     "Project", "User", "Default", 0},
-    {QuizTypeMultiChoice, "What is MCP?",
+     "Project",
+     "User",
+     "Default",
+     0},
+    {QuizTypeMultiChoice,
+     "What is MCP?",
      "Model Context Protocol",
-     "Model Context", "Manual Command", "Memory Cache", 0},
-    {QuizTypeMultiChoice, "Which hook runs\nBEFORE a tool?",
+     "Model Context",
+     "Manual Command",
+     "Memory Cache",
+     0},
+    {QuizTypeMultiChoice,
+     "Which hook runs\nBEFORE a tool?",
      "PreToolUse",
-     "PostToolUse", "PreToolUse", "OnToolUse", 1},
-    {QuizTypeMultiChoice, "How to get JSON\noutput from CLI?",
+     "PostToolUse",
+     "PreToolUse",
+     "OnToolUse",
+     1},
+    {QuizTypeMultiChoice,
+     "How to get JSON\noutput from CLI?",
      "--output-format json",
-     "--json", "--output-format", "--format=json", 1},
-    {QuizTypeMultiChoice, "Ctrl+C in Claude\nCode does what?",
+     "--json",
+     "--output-format",
+     "--format=json",
+     1},
+    {QuizTypeMultiChoice,
+     "Ctrl+C in Claude\nCode does what?",
      "Cancel/interrupt",
-     "Copy text", "Cancel/interrupt", "Clear screen", 1},
+     "Copy text",
+     "Cancel/interrupt",
+     "Clear screen",
+     1},
 };
 
 #define QUIZ_CARD_COUNT 24
@@ -709,7 +815,7 @@ typedef struct {
     bool use_ble;
     bool ble_connected;
     BtStatus bt_status;
-    bool bt_pair_screen;  /* showing BT pairing sub-screen in settings */
+    bool bt_pair_screen; /* showing BT pairing sub-screen in settings */
     Bt* bt;
     FuriHalBleProfileBase* ble_profile;
 #endif
@@ -728,10 +834,10 @@ typedef struct {
     uint8_t quiz_streak;
     uint8_t quiz_best_streak;
     uint8_t quiz_order[24]; /* QUIZ_CARD_COUNT — shuffled indices */
-    int8_t  quiz_selected;  /* multi-choice: -1=none, 0/1/2 */
-    bool    quiz_answered;  /* multi-choice: showing feedback */
-    bool    quiz_selecting; /* showing difficulty picker */
-    uint8_t quiz_count;     /* questions this round (8/16/24) */
+    int8_t quiz_selected; /* multi-choice: -1=none, 0/1/2 */
+    bool quiz_answered; /* multi-choice: showing feedback */
+    bool quiz_selecting; /* showing difficulty picker */
+    uint8_t quiz_count; /* questions this round (8/16/24) */
 
     /* double-click detection (remote mode) */
     InputKey dc_key;
@@ -746,15 +852,15 @@ typedef struct {
     uint32_t splash_start;
 
     /* tour */
-    uint8_t tour_page;      /* 0=ask, 1-4=content */
-    bool tour_skip;         /* "don't ask again" checkbox */
-    bool show_tour;         /* loaded from settings */
+    uint8_t tour_page; /* 0=ask, 1-4=content */
+    bool tour_skip; /* "don't ask again" checkbox */
+    bool show_tour; /* loaded from settings */
 
     /* settings */
     bool haptics_enabled;
     bool led_enabled;
-    uint8_t os_mode;    /* 0=Mac, 1=Windows, 2=Linux */
-    uint8_t dc_speed;   /* 0=Normal(300ms), 1=Slow(500ms), 2=Fast(200ms) */
+    uint8_t os_mode; /* 0=Mac, 1=Windows, 2=Linux */
+    uint8_t dc_speed; /* 0=Normal(300ms), 1=Slow(500ms), 2=Fast(200ms) */
     uint8_t settings_index;
 
     /* macros */
@@ -823,16 +929,20 @@ static void load_settings(ClaudeRemoteState* state) {
             } else if(strncmp(p, "led=", 4) == 0) {
                 state->led_enabled = (p[4] == '1');
             } else if(strncmp(p, "os=", 3) == 0) {
-                if(p[3] == 'w') state->os_mode = 1;
-                else if(p[3] == 'l') state->os_mode = 2;
-                else state->os_mode = 0;
+                if(p[3] == 'w')
+                    state->os_mode = 1;
+                else if(p[3] == 'l')
+                    state->os_mode = 2;
+                else
+                    state->os_mode = 0;
             } else if(strncmp(p, "tour=", 5) == 0) {
                 state->show_tour = (p[5] == '1');
             } else if(strncmp(p, "dc_speed=", 9) == 0) {
                 state->dc_speed = (uint8_t)(p[9] - '0');
                 if(state->dc_speed > 2) state->dc_speed = 0;
             }
-            while(*p && *p != '\n') p++;
+            while(*p && *p != '\n')
+                p++;
             if(*p == '\n') p++;
         }
     } else {
@@ -850,13 +960,17 @@ static void save_settings(ClaudeRemoteState* state) {
 
     if(storage_file_open(file, SETTINGS_PATH, FSAM_WRITE, FSOM_CREATE_ALWAYS)) {
         char buf[80];
-        int len = snprintf(buf, sizeof(buf),
-                           "haptics=%d\nled=%d\nos=%s\ntour=%d\ndc_speed=%d\n",
-                           state->haptics_enabled ? 1 : 0,
-                           state->led_enabled ? 1 : 0,
-                           state->os_mode == 1 ? "win" : state->os_mode == 2 ? "linux" : "mac",
-                           state->show_tour ? 1 : 0,
-                           state->dc_speed);
+        int len = snprintf(
+            buf,
+            sizeof(buf),
+            "haptics=%d\nled=%d\nos=%s\ntour=%d\ndc_speed=%d\n",
+            state->haptics_enabled ? 1 : 0,
+            state->led_enabled ? 1 : 0,
+            state->os_mode == 1 ? "win" :
+            state->os_mode == 2 ? "linux" :
+                                  "mac",
+            state->show_tour ? 1 : 0,
+            state->dc_speed);
         if(len > 0) storage_file_write(file, buf, len);
         storage_file_close(file);
     } else {
@@ -875,42 +989,77 @@ static uint16_t char_to_hid(char c) {
     if(c >= '1' && c <= '9') return HID_KEYBOARD_1 + (c - '1');
     if(c == '0') return HID_KEYBOARD_0;
     switch(c) {
-    case ' ':  return HID_KEYBOARD_SPACEBAR;
-    case '\t': return HID_KEYBOARD_TAB;
-    case '-':  return HID_KEYBOARD_MINUS;
-    case '=':  return HID_KEYBOARD_EQUAL_SIGN;
-    case '[':  return HID_KEYBOARD_OPEN_BRACKET;
-    case ']':  return HID_KEYBOARD_CLOSE_BRACKET;
-    case '\\': return HID_KEYBOARD_BACKSLASH;
-    case ';':  return HID_KEYBOARD_SEMICOLON;
-    case '\'': return HID_KEYBOARD_APOSTROPHE;
-    case '`':  return HID_KEYBOARD_GRAVE_ACCENT;
-    case ',':  return HID_KEYBOARD_COMMA;
-    case '.':  return HID_KEYBOARD_DOT;
-    case '/':  return HID_KEYBOARD_SLASH;
+    case ' ':
+        return HID_KEYBOARD_SPACEBAR;
+    case '\t':
+        return HID_KEYBOARD_TAB;
+    case '-':
+        return HID_KEYBOARD_MINUS;
+    case '=':
+        return HID_KEYBOARD_EQUAL_SIGN;
+    case '[':
+        return HID_KEYBOARD_OPEN_BRACKET;
+    case ']':
+        return HID_KEYBOARD_CLOSE_BRACKET;
+    case '\\':
+        return HID_KEYBOARD_BACKSLASH;
+    case ';':
+        return HID_KEYBOARD_SEMICOLON;
+    case '\'':
+        return HID_KEYBOARD_APOSTROPHE;
+    case '`':
+        return HID_KEYBOARD_GRAVE_ACCENT;
+    case ',':
+        return HID_KEYBOARD_COMMA;
+    case '.':
+        return HID_KEYBOARD_DOT;
+    case '/':
+        return HID_KEYBOARD_SLASH;
     /* shifted symbols */
-    case '!':  return HID_KEYBOARD_1 | KEY_MOD_LEFT_SHIFT;
-    case '@':  return HID_KEYBOARD_2 | KEY_MOD_LEFT_SHIFT;
-    case '#':  return HID_KEYBOARD_3 | KEY_MOD_LEFT_SHIFT;
-    case '$':  return HID_KEYBOARD_4 | KEY_MOD_LEFT_SHIFT;
-    case '%':  return HID_KEYBOARD_5 | KEY_MOD_LEFT_SHIFT;
-    case '^':  return HID_KEYBOARD_6 | KEY_MOD_LEFT_SHIFT;
-    case '&':  return HID_KEYBOARD_7 | KEY_MOD_LEFT_SHIFT;
-    case '*':  return HID_KEYBOARD_8 | KEY_MOD_LEFT_SHIFT;
-    case '(':  return HID_KEYBOARD_9 | KEY_MOD_LEFT_SHIFT;
-    case ')':  return HID_KEYBOARD_0 | KEY_MOD_LEFT_SHIFT;
-    case '_':  return HID_KEYBOARD_MINUS | KEY_MOD_LEFT_SHIFT;
-    case '+':  return HID_KEYBOARD_EQUAL_SIGN | KEY_MOD_LEFT_SHIFT;
-    case '{':  return HID_KEYBOARD_OPEN_BRACKET | KEY_MOD_LEFT_SHIFT;
-    case '}':  return HID_KEYBOARD_CLOSE_BRACKET | KEY_MOD_LEFT_SHIFT;
-    case '|':  return HID_KEYBOARD_BACKSLASH | KEY_MOD_LEFT_SHIFT;
-    case ':':  return HID_KEYBOARD_SEMICOLON | KEY_MOD_LEFT_SHIFT;
-    case '"':  return HID_KEYBOARD_APOSTROPHE | KEY_MOD_LEFT_SHIFT;
-    case '~':  return HID_KEYBOARD_GRAVE_ACCENT | KEY_MOD_LEFT_SHIFT;
-    case '<':  return HID_KEYBOARD_COMMA | KEY_MOD_LEFT_SHIFT;
-    case '>':  return HID_KEYBOARD_DOT | KEY_MOD_LEFT_SHIFT;
-    case '?':  return HID_KEYBOARD_SLASH | KEY_MOD_LEFT_SHIFT;
-    default:   return 0;
+    case '!':
+        return HID_KEYBOARD_1 | KEY_MOD_LEFT_SHIFT;
+    case '@':
+        return HID_KEYBOARD_2 | KEY_MOD_LEFT_SHIFT;
+    case '#':
+        return HID_KEYBOARD_3 | KEY_MOD_LEFT_SHIFT;
+    case '$':
+        return HID_KEYBOARD_4 | KEY_MOD_LEFT_SHIFT;
+    case '%':
+        return HID_KEYBOARD_5 | KEY_MOD_LEFT_SHIFT;
+    case '^':
+        return HID_KEYBOARD_6 | KEY_MOD_LEFT_SHIFT;
+    case '&':
+        return HID_KEYBOARD_7 | KEY_MOD_LEFT_SHIFT;
+    case '*':
+        return HID_KEYBOARD_8 | KEY_MOD_LEFT_SHIFT;
+    case '(':
+        return HID_KEYBOARD_9 | KEY_MOD_LEFT_SHIFT;
+    case ')':
+        return HID_KEYBOARD_0 | KEY_MOD_LEFT_SHIFT;
+    case '_':
+        return HID_KEYBOARD_MINUS | KEY_MOD_LEFT_SHIFT;
+    case '+':
+        return HID_KEYBOARD_EQUAL_SIGN | KEY_MOD_LEFT_SHIFT;
+    case '{':
+        return HID_KEYBOARD_OPEN_BRACKET | KEY_MOD_LEFT_SHIFT;
+    case '}':
+        return HID_KEYBOARD_CLOSE_BRACKET | KEY_MOD_LEFT_SHIFT;
+    case '|':
+        return HID_KEYBOARD_BACKSLASH | KEY_MOD_LEFT_SHIFT;
+    case ':':
+        return HID_KEYBOARD_SEMICOLON | KEY_MOD_LEFT_SHIFT;
+    case '"':
+        return HID_KEYBOARD_APOSTROPHE | KEY_MOD_LEFT_SHIFT;
+    case '~':
+        return HID_KEYBOARD_GRAVE_ACCENT | KEY_MOD_LEFT_SHIFT;
+    case '<':
+        return HID_KEYBOARD_COMMA | KEY_MOD_LEFT_SHIFT;
+    case '>':
+        return HID_KEYBOARD_DOT | KEY_MOD_LEFT_SHIFT;
+    case '?':
+        return HID_KEYBOARD_SLASH | KEY_MOD_LEFT_SHIFT;
+    default:
+        return 0;
     }
 }
 
@@ -930,7 +1079,8 @@ static void bt_status_callback(BtStatus status, void* context) {
 
 /* ── HID helpers ── */
 
-#define HID_CONSUMER_DICTATION 0x00CF /* Consumer Page: Voice Command (triggers Edit > Start Dictation on macOS) */
+#define HID_CONSUMER_DICTATION \
+    0x00CF /* Consumer Page: Voice Command (triggers Edit > Start Dictation on macOS) */
 
 #ifdef HID_TRANSPORT_BLE
 static void send_hid_key_ble(FuriHalBleProfileBase* profile, uint16_t keycode) {
@@ -987,17 +1137,31 @@ static const uint8_t wetware_logo[] = {
 /* ── Transport-agnostic key send ── */
 
 #ifdef HID_TRANSPORT_BLE
-#define SEND_HID(state, k) do { \
-    if((state)->use_ble) send_hid_key_ble((state)->ble_profile, (k)); \
-    else send_hid_key_usb((k)); \
-} while(0)
-#define SEND_CONSUMER(state, k) do { \
-    if((state)->use_ble) send_consumer_key_ble((state)->ble_profile, (k)); \
-    else send_consumer_key_usb((k)); \
-} while(0)
+#define SEND_HID(state, k)                               \
+    do {                                                 \
+        if((state)->use_ble)                             \
+            send_hid_key_ble((state)->ble_profile, (k)); \
+        else                                             \
+            send_hid_key_usb((k));                       \
+    } while(0)
+#define SEND_CONSUMER(state, k)                               \
+    do {                                                      \
+        if((state)->use_ble)                                  \
+            send_consumer_key_ble((state)->ble_profile, (k)); \
+        else                                                  \
+            send_consumer_key_usb((k));                       \
+    } while(0)
 #else
-#define SEND_HID(state, k) do { (void)(state); send_hid_key_usb((k)); } while(0)
-#define SEND_CONSUMER(state, k) do { (void)(state); send_consumer_key_usb((k)); } while(0)
+#define SEND_HID(state, k)     \
+    do {                       \
+        (void)(state);         \
+        send_hid_key_usb((k)); \
+    } while(0)
+#define SEND_CONSUMER(state, k)     \
+    do {                            \
+        (void)(state);              \
+        send_consumer_key_usb((k)); \
+    } while(0)
 #endif
 
 /* dc_speed: 0=Normal(300ms), 1=Slow(500ms), 2=Fast(200ms) */
@@ -1023,17 +1187,16 @@ static void send_macro_string(ClaudeRemoteState* state, const char* str) {
 
 /* ── Macro loader from SD ── */
 
-static const char* const default_macros_text =
-    "/compact\n"
-    "/rename\n"
-    "/resume\n"
-    "/review\n"
-    "/remote-control\n"
-    "claude --dangerously-skip-permissions --continue\n"
-    "fix this\n"
-    "explain this error\n"
-    "run the tests\n"
-    "/commit\n";
+static const char* const default_macros_text = "/compact\n"
+                                               "/rename\n"
+                                               "/resume\n"
+                                               "/review\n"
+                                               "/remote-control\n"
+                                               "claude --dangerously-skip-permissions --continue\n"
+                                               "fix this\n"
+                                               "explain this error\n"
+                                               "run the tests\n"
+                                               "/commit\n";
 
 static void write_default_macros(Storage* storage) {
     storage_simply_mkdir(storage, APP_DATA_DIR);
@@ -1051,7 +1214,8 @@ static void parse_macros_buf(ClaudeRemoteState* state, char* buf) {
     char* p = buf;
     while(*p && state->macro_count < MACRO_MAX_COUNT) {
         char* line_start = p;
-        while(*p && *p != '\n' && *p != '\r') p++;
+        while(*p && *p != '\n' && *p != '\r')
+            p++;
 
         int len = p - line_start;
         if(len > MACRO_MAX_LEN) len = MACRO_MAX_LEN;
@@ -1062,7 +1226,8 @@ static void parse_macros_buf(ClaudeRemoteState* state, char* buf) {
             state->macro_count++;
         }
 
-        while(*p == '\n' || *p == '\r') p++;
+        while(*p == '\n' || *p == '\r')
+            p++;
     }
 }
 
@@ -1374,7 +1539,6 @@ static void draw_home(Canvas* canvas) {
     canvas_draw_line(canvas, 14, 119, 11, 116);
     canvas_draw_line(canvas, 14, 119, 11, 122);
     canvas_draw_str(canvas, 21, 122, "Bluetooth");
-
 }
 
 #ifndef HID_TRANSPORT_BLE
@@ -1503,8 +1667,7 @@ static void draw_remote(Canvas* canvas, ClaudeRemoteState* state) {
     canvas_draw_str_aligned(canvas, 32, 93, AlignCenter, AlignCenter, "Right+Down");
 
     /* ══════ FLASH OVERLAY ══════ */
-    if(state->flash_label &&
-       (furi_get_tick() - state->flash_tick) < FLASH_DURATION_TICKS) {
+    if(state->flash_label && (furi_get_tick() - state->flash_tick) < FLASH_DURATION_TICKS) {
         canvas_draw_rbox(canvas, 0, 76, 64, 52, 3);
         canvas_set_color(canvas, ColorWhite);
         canvas_set_font(canvas, FontPrimary);
@@ -1612,8 +1775,12 @@ static void draw_manual_read(Canvas* canvas, ClaudeRemoteState* state) {
     canvas_set_font(canvas, FontPrimary);
     char header[48];
     snprintf(
-        header, sizeof(header), "%d/%d %s",
-        state->section_index + 1, cat->section_count, sec->title);
+        header,
+        sizeof(header),
+        "%d/%d %s",
+        state->section_index + 1,
+        cat->section_count,
+        sec->title);
     canvas_draw_str(canvas, 2, 10, header);
     canvas_draw_line(canvas, 0, 13, 128, 13);
 
@@ -1784,8 +1951,8 @@ static void draw_manual_quiz(Canvas* canvas, ClaudeRemoteState* state) {
 
         canvas_set_font(canvas, FontSecondary);
         char score_buf[32];
-        snprintf(score_buf, sizeof(score_buf), "Score: %d / %d",
-                 state->quiz_correct, state->quiz_total);
+        snprintf(
+            score_buf, sizeof(score_buf), "Score: %d / %d", state->quiz_correct, state->quiz_total);
         canvas_draw_str_aligned(canvas, 64, 30, AlignCenter, AlignCenter, score_buf);
 
         if(state->quiz_total > 0) {
@@ -1796,8 +1963,7 @@ static void draw_manual_quiz(Canvas* canvas, ClaudeRemoteState* state) {
         }
 
         char streak_buf[24];
-        snprintf(streak_buf, sizeof(streak_buf), "Best streak: %d",
-                 state->quiz_best_streak);
+        snprintf(streak_buf, sizeof(streak_buf), "Best streak: %d", state->quiz_best_streak);
         canvas_draw_str_aligned(canvas, 64, 50, AlignCenter, AlignCenter, streak_buf);
 
         canvas_draw_rframe(canvas, 16, 22, 96, 34, 3);
@@ -1810,8 +1976,7 @@ static void draw_manual_quiz(Canvas* canvas, ClaudeRemoteState* state) {
     /* header */
     canvas_set_font(canvas, FontPrimary);
     char header[32];
-    snprintf(header, sizeof(header), "Quiz %d/%d",
-             state->quiz_index + 1, state->quiz_count);
+    snprintf(header, sizeof(header), "Quiz %d/%d", state->quiz_index + 1, state->quiz_count);
     canvas_draw_str(canvas, 2, 10, header);
 
     /* score + streak */
@@ -1819,11 +1984,15 @@ static void draw_manual_quiz(Canvas* canvas, ClaudeRemoteState* state) {
     if(state->quiz_total > 0 || state->quiz_streak > 0) {
         char score[20];
         if(state->quiz_streak >= 2) {
-            snprintf(score, sizeof(score), "%d/%d %dx",
-                     state->quiz_correct, state->quiz_total, state->quiz_streak);
+            snprintf(
+                score,
+                sizeof(score),
+                "%d/%d %dx",
+                state->quiz_correct,
+                state->quiz_total,
+                state->quiz_streak);
         } else {
-            snprintf(score, sizeof(score), "%d/%d",
-                     state->quiz_correct, state->quiz_total);
+            snprintf(score, sizeof(score), "%d/%d", state->quiz_correct, state->quiz_total);
         }
         canvas_draw_str_aligned(canvas, 124, 10, AlignRight, AlignCenter, score);
     }
@@ -1845,7 +2014,11 @@ static void draw_settings(Canvas* canvas, ClaudeRemoteState* state) {
     canvas_set_font(canvas, FontSecondary);
 
     const char* labels[SETTINGS_COUNT] = {
-        "Haptics", "LED", "OS", "Tour", "DblClk",
+        "Haptics",
+        "LED",
+        "OS",
+        "Tour",
+        "DblClk",
 #ifdef HID_TRANSPORT_BLE
         "Bluetooth",
 #endif
@@ -1869,15 +2042,22 @@ static void draw_settings(Canvas* canvas, ClaudeRemoteState* state) {
         canvas_draw_str(canvas, 6, y, labels[idx]);
 
         const char* val_str;
-        if(idx == 0) val_str = state->haptics_enabled ? "[ON]" : "[OFF]";
-        else if(idx == 1) val_str = state->led_enabled ? "[ON]" : "[OFF]";
-        else if(idx == 2) val_str = state->os_mode == 1 ? "[Win]" : state->os_mode == 2 ? "[Linux]" : "[Mac]";
-        else if(idx == 3) val_str = state->show_tour ? "[ON]" : "[OFF]";
-        else if(idx == 4) val_str = state->dc_speed == 1 ? "[Slow]" : state->dc_speed == 2 ? "[Fast]" : "[Norm]";
+        if(idx == 0)
+            val_str = state->haptics_enabled ? "[ON]" : "[OFF]";
+        else if(idx == 1)
+            val_str = state->led_enabled ? "[ON]" : "[OFF]";
+        else if(idx == 2)
+            val_str = state->os_mode == 1 ? "[Win]" : state->os_mode == 2 ? "[Linux]" : "[Mac]";
+        else if(idx == 3)
+            val_str = state->show_tour ? "[ON]" : "[OFF]";
+        else if(idx == 4)
+            val_str = state->dc_speed == 1 ? "[Slow]" : state->dc_speed == 2 ? "[Fast]" : "[Norm]";
 #ifdef HID_TRANSPORT_BLE
-        else if(idx == 5) val_str = state->ble_connected ? "[OK]" : "[...]";
+        else if(idx == 5)
+            val_str = state->ble_connected ? "[OK]" : "[...]";
 #endif
-        else val_str = "";
+        else
+            val_str = "";
         canvas_draw_str_aligned(canvas, 110, y, AlignRight, AlignBottom, val_str);
 
         if(selected) {
@@ -1924,7 +2104,6 @@ static void draw_bt_pairing(Canvas* canvas, ClaudeRemoteState* state) {
 
     canvas_set_font(canvas, FontPrimary);
     canvas_draw_str_aligned(canvas, 64, 50, AlignCenter, AlignBottom, "Flipper Zero");
-
 }
 #endif
 
@@ -2082,22 +2261,39 @@ static void handle_tour_input(ClaudeRemoteState* state, InputEvent* event, ViewP
     if(event->type != InputTypeShort) return;
     if(state->tour_page == 0) {
         switch(event->key) {
-        case InputKeyOk: state->tour_page = 1; break;
-        case InputKeyUp: case InputKeyDown: state->tour_skip = !state->tour_skip; break;
-        case InputKeyBack: tour_go_home(state, vp); break;
-        default: break;
+        case InputKeyOk:
+            state->tour_page = 1;
+            break;
+        case InputKeyUp:
+        case InputKeyDown:
+            state->tour_skip = !state->tour_skip;
+            break;
+        case InputKeyBack:
+            tour_go_home(state, vp);
+            break;
+        default:
+            break;
         }
         return;
     }
     switch(event->key) {
-    case InputKeyRight: if(state->tour_page < 4) state->tour_page++; break;
-    case InputKeyLeft: if(state->tour_page > 1) state->tour_page--; break;
-    case InputKeyOk:
+    case InputKeyRight:
         if(state->tour_page < 4) state->tour_page++;
-        else tour_go_home(state, vp);
         break;
-    case InputKeyBack: tour_go_home(state, vp); break;
-    default: break;
+    case InputKeyLeft:
+        if(state->tour_page > 1) state->tour_page--;
+        break;
+    case InputKeyOk:
+        if(state->tour_page < 4)
+            state->tour_page++;
+        else
+            tour_go_home(state, vp);
+        break;
+    case InputKeyBack:
+        tour_go_home(state, vp);
+        break;
+    default:
+        break;
     }
 }
 
@@ -2167,11 +2363,7 @@ static bool handle_home_input(ClaudeRemoteState* state, InputEvent* event, ViewP
     return true;
 }
 
-static bool handle_remote_input(
-    ClaudeRemoteState* state,
-    InputEvent* event,
-    ViewPort* view_port) {
-
+static bool handle_remote_input(ClaudeRemoteState* state, InputEvent* event, ViewPort* view_port) {
     /* ── Track held keys for Right+Down combo (hotkey overlay) ── */
     if(event->type == InputTypePress) {
         if(event->key == InputKeyRight) state->right_held = true;
@@ -2207,8 +2399,7 @@ static bool handle_remote_input(
             uint32_t held_ms = now - state->left_hold_start;
             /* 250ms repeat initially, 100ms after 2 seconds (60% faster) */
             uint32_t interval = (held_ms > 2000) ? 100 : 250;
-            if(state->left_repeat_tick == 0 ||
-               (now - state->left_repeat_tick) >= interval) {
+            if(state->left_repeat_tick == 0 || (now - state->left_repeat_tick) >= interval) {
                 SEND_HID(state, HID_KEYBOARD_DELETE);
                 state->left_repeat_tick = now;
             }
@@ -2218,8 +2409,7 @@ static bool handle_remote_input(
 
     /* ── Dismiss hotkey overlay (ignore first 400ms to absorb combo release) ── */
     if(state->show_hotkeys) {
-        if(event->type == InputTypeShort &&
-           (furi_get_tick() - state->hotkeys_tick) > 400) {
+        if(event->type == InputTypeShort && (furi_get_tick() - state->hotkeys_tick) > 400) {
             state->show_hotkeys = false;
         }
         return true;
@@ -2388,13 +2578,20 @@ static void handle_manual_quiz(ClaudeRemoteState* state, InputEvent* event) {
     /* difficulty picker */
     if(state->quiz_selecting) {
         switch(event->key) {
-        case InputKeyLeft:  quiz_start(state, 8);  return;
-        case InputKeyUp:    quiz_start(state, 16); return;
-        case InputKeyRight: quiz_start(state, 24); return;
+        case InputKeyLeft:
+            quiz_start(state, 8);
+            return;
+        case InputKeyUp:
+            quiz_start(state, 16);
+            return;
+        case InputKeyRight:
+            quiz_start(state, 24);
+            return;
         case InputKeyBack:
             state->manual_view = ManualViewCategories;
             return;
-        default: return;
+        default:
+            return;
         }
     }
 
@@ -2424,13 +2621,20 @@ static void handle_manual_quiz(ClaudeRemoteState* state, InputEvent* event) {
         } else {
             int8_t picked = -1;
             switch(event->key) {
-            case InputKeyLeft:  picked = 0; break;
-            case InputKeyUp:    picked = 1; break;
-            case InputKeyRight: picked = 2; break;
+            case InputKeyLeft:
+                picked = 0;
+                break;
+            case InputKeyUp:
+                picked = 1;
+                break;
+            case InputKeyRight:
+                picked = 2;
+                break;
             case InputKeyBack:
                 state->manual_view = ManualViewCategories;
                 return;
-            default: break;
+            default:
+                break;
             }
             if(picked >= 0) {
                 state->quiz_selected = picked;
