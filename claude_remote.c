@@ -1188,10 +1188,12 @@ static void send_macro_string(ClaudeRemoteState* state, const char* str) {
 /* ── Macro loader from SD ── */
 
 static const char* const default_macros_text =
+    "/rename\n"
+    "/exit\n"
+    "/resume\n"
+    "claude --dangerously-skip-permissions --continue\n"
     "/compact\n"
     "/model\n"
-    "/rename\n"
-    "/resume\n"
     "/review\n"
     "/commit\n"
     "/clear\n"
@@ -1208,8 +1210,7 @@ static const char* const default_macros_text =
     "Push to GH\n"
     "Give me a progress report on our project.\n"
     "Run a security audit. Implement any low-effort, high value fixes\n"
-    "{update}\n"
-    "/exit\n";
+    "{update}\n";
 
 static void write_default_macros(Storage* storage) {
     storage_simply_mkdir(storage, APP_DATA_DIR);
@@ -2182,17 +2183,17 @@ static void draw_macros(Canvas* canvas, ClaudeRemoteState* state) {
         canvas_draw_str(canvas, 4, 52, MACROS_PATH);
     } else {
         uint8_t first_visible = 0;
-        if(state->macro_index > 2) first_visible = state->macro_index - 2;
+        if(state->macro_index > 3) first_visible = state->macro_index - 3;
 
-        for(int i = 0; i < 3; i++) {
+        for(int i = 0; i < 4; i++) {
             uint8_t idx = first_visible + i;
             if(idx >= state->macro_count) break;
 
-            int y = 24 + i * 12;
+            int y = 22 + i * 11;
             bool selected = (idx == state->macro_index);
 
             if(selected) {
-                canvas_draw_box(canvas, 0, y - 9, 122, 12);
+                canvas_draw_box(canvas, 0, y - 8, 122, 11);
                 canvas_set_color(canvas, ColorWhite);
             }
 

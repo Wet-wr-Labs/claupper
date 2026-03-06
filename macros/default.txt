@@ -1,7 +1,9 @@
+/rename
+/exit
+/resume
+claude --dangerously-skip-permissions --continue
 /compact
 /model
-/rename
-/resume
 /review
 /commit
 /clear
@@ -19,4 +21,3 @@ Push to GH
 Give me a progress report on our project.
 Run a security audit. Implement any low-effort, high value fixes
 {update}
-/exit
