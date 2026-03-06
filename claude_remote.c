@@ -3009,8 +3009,8 @@ static int32_t claude_remote_main(void* p) {
     /* Also cleanup BLE HID */
     bt_set_status_changed_callback(state->bt, NULL, NULL);
     ble_profile_hid_kb_release_all(state->ble_profile);
-    bt_keys_storage_set_default_path(state->bt);
-    bt_profile_restore_default(state->bt);
+    bt_profile_restore_default(state->bt); /* saves bonding keys to our app path */
+    bt_keys_storage_set_default_path(state->bt); /* then switch back to system path */
     furi_record_close(RECORD_BT);
 #endif
 
