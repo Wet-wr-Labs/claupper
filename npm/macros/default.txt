@@ -9,3 +9,4 @@ explain this error
 run the tests
 /commit
 {update}
+/exit

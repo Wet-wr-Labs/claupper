@@ -627,7 +627,7 @@ static const ManualCategory categories[] = {
 #define SETTINGS_COUNT 5
 #endif
 
-#define MACRO_MAX_COUNT 20
+#define MACRO_MAX_COUNT 24
 #define MACRO_MAX_LEN   96
 #define MACROS_PATH     APP_DATA_PATH("macros.txt")
 
@@ -1183,7 +1183,6 @@ static void send_macro_string(ClaudeRemoteState* state, const char* str) {
             furi_delay_ms(20);
         }
     }
-    SEND_HID(state, HID_KEYBOARD_RETURN);
 }
 
 /* ── Macro loader from SD ── */
@@ -1209,7 +1208,8 @@ static const char* const default_macros_text =
     "Push to GH\n"
     "Give me a progress report on our project.\n"
     "Run a security audit. Implement any low-effort, high value fixes\n"
-    "{update}\n";
+    "{update}\n"
+    "/exit\n";
 
 static void write_default_macros(Storage* storage) {
     storage_simply_mkdir(storage, APP_DATA_DIR);
