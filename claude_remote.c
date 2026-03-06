@@ -627,8 +627,8 @@ static const ManualCategory categories[] = {
 #define SETTINGS_COUNT 5
 #endif
 
-#define MACRO_MAX_COUNT 10
-#define MACRO_MAX_LEN   64
+#define MACRO_MAX_COUNT 20
+#define MACRO_MAX_LEN   96
 #define MACROS_PATH     APP_DATA_PATH("macros.txt")
 
 /* ── Quiz cards ── */
@@ -839,10 +839,11 @@ typedef struct {
     bool quiz_selecting; /* showing difficulty picker */
     uint8_t quiz_count; /* questions this round (8/16/24) */
 
-    /* double-click detection (remote mode) */
+    /* multi-click detection (remote mode) */
     InputKey dc_key;
     uint32_t dc_tick;
     bool dc_pending;
+    uint8_t dc_count; /* 1=single pending, 2=double pending */
 
     /* visual feedback flash */
     uint32_t flash_tick;
@@ -1187,16 +1188,28 @@ static void send_macro_string(ClaudeRemoteState* state, const char* str) {
 
 /* ── Macro loader from SD ── */
 
-static const char* const default_macros_text = "/compact\n"
-                                               "/rename\n"
-                                               "/resume\n"
-                                               "/review\n"
-                                               "/remote-control\n"
-                                               "claude --dangerously-skip-permissions --continue\n"
-                                               "fix this\n"
-                                               "explain this error\n"
-                                               "run the tests\n"
-                                               "/commit\n";
+static const char* const default_macros_text =
+    "/compact\n"
+    "/model\n"
+    "/rename\n"
+    "/resume\n"
+    "/review\n"
+    "/commit\n"
+    "/clear\n"
+    "/cost\n"
+    "/init\n"
+    "/doctor\n"
+    "/memory\n"
+    "/status\n"
+    "/help\n"
+    "/permissions\n"
+    "/vim\n"
+    "/remote-control\n"
+    "Audit our entire codebase. Use best practices according to official docs.\n"
+    "Push to GH\n"
+    "Give me a progress report on our project.\n"
+    "Run a security audit. Implement any low-effort, high value fixes\n"
+    "{update}\n";
 
 static void write_default_macros(Storage* storage) {
     storage_simply_mkdir(storage, APP_DATA_DIR);
@@ -1240,7 +1253,7 @@ static void load_macros_from_sd(ClaudeRemoteState* state) {
 
     bool loaded = false;
     if(storage_file_open(file, MACROS_PATH, FSAM_READ, FSOM_OPEN_EXISTING)) {
-        char buf[512];
+        char buf[2048];
         uint16_t bytes_read = storage_file_read(file, buf, sizeof(buf) - 1);
         buf[bytes_read] = '\0';
         storage_file_close(file);
@@ -1257,7 +1270,7 @@ static void load_macros_from_sd(ClaudeRemoteState* state) {
     /* Write defaults if file was missing or empty */
     if(!loaded) {
         write_default_macros(storage);
-        char buf[512];
+        char buf[2048];
         strncpy(buf, default_macros_text, sizeof(buf) - 1);
         buf[sizeof(buf) - 1] = '\0';
         parse_macros_buf(state, buf);
@@ -1266,10 +1279,18 @@ static void load_macros_from_sd(ClaudeRemoteState* state) {
     furi_record_close(RECORD_STORAGE);
 }
 
-static void flush_pending_single(ClaudeRemoteState* state) {
+static void send_double_action(ClaudeRemoteState* state, InputKey key);
+
+static void flush_pending(ClaudeRemoteState* state) {
     if(!state->dc_pending) return;
     state->dc_pending = false;
     if(!state->hid_connected) return;
+
+    /* Deferred double-click: timeout expired after 2nd click without 3rd */
+    if(state->dc_count == 2) {
+        send_double_action(state, state->dc_key);
+        return;
+    }
 
     const char* label = NULL;
     switch(state->dc_key) {
@@ -1352,6 +1373,43 @@ static void send_double_action(ClaudeRemoteState* state, InputKey key) {
         SEND_HID(state, HID_KEYBOARD_PAGE_DOWN);
         label = "Pg Down";
         FURI_LOG_I(TAG, "Double: Page Down");
+        break;
+    default:
+        break;
+    }
+    if(label) {
+        state->flash_label = label;
+        state->flash_tick = furi_get_tick();
+        if(state->haptics_enabled) {
+            notification_message(state->notifications, &sequence_double_vibro);
+        }
+    }
+}
+
+static void send_triple_action(ClaudeRemoteState* state, InputKey key) {
+    if(!state->hid_connected) return;
+
+    const char* label = NULL;
+    switch(key) {
+    case InputKeyLeft:
+        SEND_HID(state, HID_KEYBOARD_LEFT_ARROW);
+        label = "Left";
+        FURI_LOG_I(TAG, "Triple: Left Arrow");
+        break;
+    case InputKeyUp:
+        SEND_HID(state, HID_KEYBOARD_UP_ARROW);
+        label = "Up";
+        FURI_LOG_I(TAG, "Triple: Up Arrow");
+        break;
+    case InputKeyRight:
+        SEND_HID(state, HID_KEYBOARD_RIGHT_ARROW);
+        label = "Right";
+        FURI_LOG_I(TAG, "Triple: Right Arrow");
+        break;
+    case InputKeyDown:
+        SEND_HID(state, HID_KEYBOARD_DOWN_ARROW);
+        label = "Down";
+        FURI_LOG_I(TAG, "Triple: Down Arrow");
         break;
     default:
         break;
@@ -2139,7 +2197,12 @@ static void draw_macros(Canvas* canvas, ClaudeRemoteState* state) {
             }
 
             char display[MACRO_MAX_LEN + 8];
-            snprintf(display, sizeof(display), "%d. %s", idx + 1, state->macros[idx]);
+            const char* label = state->macros[idx];
+            if(strcmp(label, "{update}") == 0) {
+                label = (state->os_mode == 0) ? "brew upgrade claude-code" :
+                                                "npm update -g claude-code";
+            }
+            snprintf(display, sizeof(display), "%d. %s", idx + 1, label);
 
             if(selected) {
                 uint16_t text_w = canvas_string_width(canvas, display);
@@ -2456,16 +2519,23 @@ static bool handle_remote_input(ClaudeRemoteState* state, InputEvent* event, Vie
     uint32_t now = furi_get_tick();
     if(state->dc_pending && event->key == state->dc_key &&
        (now - state->dc_tick) < dc_timeout(state)) {
-        /* double-click detected */
-        state->dc_pending = false;
-        send_double_action(state, event->key);
+        if(state->dc_count == 2) {
+            /* triple-click detected */
+            state->dc_pending = false;
+            send_triple_action(state, event->key);
+        } else {
+            /* double-click detected — defer to wait for possible triple */
+            state->dc_count = 2;
+            state->dc_tick = now;
+        }
     } else {
         /* flush any different pending key first */
-        flush_pending_single(state);
+        flush_pending(state);
         /* start new pending */
         state->dc_key = event->key;
         state->dc_tick = now;
         state->dc_pending = true;
+        state->dc_count = 1;
     }
 
     return true;
@@ -2766,7 +2836,16 @@ static bool handle_macros_input(ClaudeRemoteState* state, InputEvent* event, Vie
             char macro_buf[MACRO_MAX_LEN + 1];
             memcpy(macro_buf, state->macros[state->macro_index], sizeof(macro_buf));
             furi_mutex_release(state->mutex);
-            send_macro_string(state, macro_buf);
+            /* Smart macros: expand tokens based on settings */
+            if(strcmp(macro_buf, "{update}") == 0) {
+                if(state->os_mode == 0) {
+                    send_macro_string(state, "brew upgrade claude-code");
+                } else {
+                    send_macro_string(state, "npm update -g @anthropic-ai/claude-code");
+                }
+            } else {
+                send_macro_string(state, macro_buf);
+            }
             furi_mutex_acquire(state->mutex, FuriWaitForever);
         }
         break;
@@ -2909,7 +2988,7 @@ static int32_t claude_remote_main(void* p) {
             /* flush pending single-press after double-click timeout (remote only) */
             if(state->mode == ModeRemote && state->dc_pending &&
                (furi_get_tick() - state->dc_tick) >= dc_timeout(state)) {
-                flush_pending_single(state);
+                flush_pending(state);
             }
         }
 

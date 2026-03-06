@@ -1,10 +1,21 @@
 /compact
+/model
 /rename
 /resume
 /review
-/remote-control
-claude --dangerously-skip-permissions --continue
-fix this
-explain this error
-run the tests
 /commit
+/clear
+/cost
+/init
+/doctor
+/memory
+/status
+/help
+/permissions
+/vim
+/remote-control
+Audit our entire codebase. Use best practices according to official docs.
+Push to GH
+Give me a progress report on our project.
+Run a security audit. Implement any low-effort, high value fixes
+{update}
