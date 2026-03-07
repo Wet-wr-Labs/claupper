@@ -881,6 +881,9 @@ typedef struct {
     bool left_holding;
     uint32_t left_hold_start;
     uint32_t left_repeat_tick;
+
+    /* combo cooldown — suppress Short events after Left+Down toggle */
+    uint32_t combo_tick;
 } ClaudeRemoteState;
 
 /* ── Utility ── */
@@ -1210,7 +1213,8 @@ static const char* const default_macros_text =
     "Push to GH\n"
     "Give me a progress report on our project.\n"
     "Run a security audit. Implement any low-effort, high value fixes\n"
-    "{update}\n";
+    "{update}\n"
+    "Continue, please.\n";
 
 static void write_default_macros(Storage* storage) {
     storage_simply_mkdir(storage, APP_DATA_DIR);
@@ -1660,9 +1664,10 @@ static void draw_remote(Canvas* canvas, ClaudeRemoteState* state) {
         canvas_draw_str(canvas, 6, 78, "v Page Down");
         canvas_draw_str(canvas, 6, 90, "o Switch win");
 
-        canvas_draw_str_aligned(canvas, 32, 104, AlignCenter, AlignCenter, "Hold:");
-        canvas_draw_str(canvas, 6, 114, "< Backspace");
-        canvas_draw_str(canvas, 6, 122, "Bk Escape");
+        canvas_draw_str_aligned(canvas, 32, 100, AlignCenter, AlignCenter, "Hold:");
+        canvas_draw_str(canvas, 6, 110, "< Backspace");
+        canvas_draw_str(canvas, 6, 118, "Bk Escape");
+        canvas_draw_str(canvas, 6, 126, "<+v USB/BLE");
 
         canvas_set_color(canvas, ColorBlack);
         return;
@@ -1672,7 +1677,13 @@ static void draw_remote(Canvas* canvas, ClaudeRemoteState* state) {
     canvas_draw_rbox(canvas, 0, 0, 64, 14, 2);
     canvas_set_color(canvas, ColorWhite);
     canvas_set_font(canvas, FontPrimary);
+#ifdef HID_TRANSPORT_BLE
+    canvas_draw_str_aligned(canvas, 27, 8, AlignCenter, AlignCenter, "Claupper");
+    canvas_set_font(canvas, FontSecondary);
+    canvas_draw_str_aligned(canvas, 58, 8, AlignCenter, AlignCenter, state->use_ble ? "BT" : "U");
+#else
     canvas_draw_str_aligned(canvas, 32, 8, AlignCenter, AlignCenter, "Claupper");
+#endif
     canvas_set_color(canvas, ColorBlack);
 
     /* ══════ D-PAD SECTION ══════ */
@@ -2443,6 +2454,23 @@ static bool handle_remote_input(ClaudeRemoteState* state, InputEvent* event, Vie
             state->dc_pending = false;
             return true;
         }
+#ifdef HID_TRANSPORT_BLE
+        /* Left+Down combo → toggle USB/BLE transport */
+        if(state->left_holding && state->down_held) {
+            state->combo_tick = furi_get_tick();
+            state->use_ble = !state->use_ble;
+            state->hid_connected = state->use_ble ? state->ble_connected :
+                                                    furi_hal_hid_is_connected();
+            state->flash_label = state->use_ble ? "BLE" : "USB";
+            state->flash_tick = furi_get_tick();
+            state->dc_pending = false;
+            state->left_repeat_tick = 0; /* prevent backspace firing */
+            if(state->haptics_enabled) {
+                notification_message(state->notifications, &sequence_single_vibro);
+            }
+            return true;
+        }
+#endif
     }
     if(event->type == InputTypeRelease) {
         if(event->key == InputKeyRight) state->right_held = false;
@@ -2450,9 +2478,15 @@ static bool handle_remote_input(ClaudeRemoteState* state, InputEvent* event, Vie
         if(event->key == InputKeyLeft) state->left_holding = false;
         return true;
     }
+    /* Also clear combo flags on Short (some FW versions skip Release for short taps) */
+    if(event->type == InputTypeShort) {
+        if(event->key == InputKeyRight) state->right_held = false;
+        if(event->key == InputKeyDown) state->down_held = false;
+        if(event->key == InputKeyLeft) state->left_holding = false;
+    }
 
-    /* ── Hold Left = backspace repeat with acceleration ── */
-    if(event->key == InputKeyLeft && state->left_holding &&
+    /* ── Hold Left = backspace repeat with acceleration (skip if Down held for combo) ── */
+    if(event->key == InputKeyLeft && state->left_holding && !state->down_held &&
        (event->type == InputTypeLong || event->type == InputTypeRepeat)) {
         /* Cancel double-click pending for Left (don't send "1") */
         if(state->dc_pending && state->dc_key == InputKeyLeft) {
@@ -2480,6 +2514,11 @@ static bool handle_remote_input(ClaudeRemoteState* state, InputEvent* event, Vie
     }
 
     if(event->type != InputTypeShort && event->type != InputTypeLong) return true;
+
+    /* Suppress Short events after Left+Down combo (absorb both key releases) */
+    if(state->combo_tick && (furi_get_tick() - state->combo_tick) < 500) {
+        return true;
+    }
 
     if(event->key == InputKeyBack) {
         if(event->type == InputTypeLong) {
