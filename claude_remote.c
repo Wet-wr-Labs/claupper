@@ -1686,7 +1686,7 @@ static void draw_remote(Canvas* canvas, ClaudeRemoteState* state) {
         canvas_draw_str_aligned(canvas, 32, 100, AlignCenter, AlignCenter, "Hold:");
         canvas_draw_str(canvas, 6, 110, "< Backspace");
         canvas_draw_str(canvas, 6, 118, "Bk Escape");
-        canvas_draw_str(canvas, 6, 126, "<+v USB/BLE");
+        canvas_draw_str(canvas, 6, 126, "<+v Macros");
 
         canvas_set_color(canvas, ColorBlack);
         return;
@@ -2486,23 +2486,22 @@ static bool handle_remote_input(ClaudeRemoteState* state, InputEvent* event, Vie
             state->dc_pending = false;
             return true;
         }
-#ifdef HID_TRANSPORT_BLE
-        /* Left+Down combo → toggle USB/BLE transport */
+        /* Left+Down combo → open Macros */
         if(state->left_holding && state->down_held) {
             state->combo_tick = furi_get_tick();
-            state->use_ble = !state->use_ble;
-            state->hid_connected = state->use_ble ? state->ble_connected :
-                                                    furi_hal_hid_is_connected();
-            state->flash_label = state->use_ble ? "BLE" : "USB";
-            state->flash_tick = furi_get_tick();
             state->dc_pending = false;
             state->left_repeat_tick = 0; /* prevent backspace firing */
+            if(!state->macros_loaded) {
+                load_macros_from_sd(state);
+            }
+            state->macro_index = 0;
+            state->macro_scroll_tick = furi_get_tick();
+            state->mode = ModeMacros;
             if(state->haptics_enabled) {
                 notification_message(state->notifications, &sequence_single_vibro);
             }
             return true;
         }
-#endif
     }
     if(event->type == InputTypeRelease) {
         if(event->key == InputKeyRight) state->right_held = false;

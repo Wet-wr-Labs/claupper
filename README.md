@@ -25,9 +25,9 @@ Then copy the `.fap` to your Flipper's SD card and you're set.
 
 Claude Code is a terminal app. Every interaction is: read output, pick an option. Claupper maps that entire workflow to five buttons.
 
-The `/claupper` skill tells Claude to present every decision as exactly 3 numbered options via `AskUserQuestion`. You press 1, 2, or 3 on the d-pad — that's it, no Enter needed. Claude predicts what you want — Option 1 is always the most likely action. One click per decision.
+The `/claupper` skill tells Claude to present every decision as exactly 3 numbered options via `AskUserQuestion`. You press 1, 2, or 3 on the d-pad, that's it, no Enter needed. Claude predicts what you want. Option 1 is always the most likely action. One click per decision.
 
-When you need to type, hit Down for voice dictation. When you need to scroll, double-click. When you need a slash command, swipe up to Macros.
+When you need to type, hit Down for voice dictation. When you need to scroll, double-click Up or Down. Double-click OK to Cmd+\` between terminal windows. Need to fire off a `/commit` or a custom prompt? Hold Left+Down to jump into Macros, fully customizable from a text file on the SD card. The whole point is you never touch your keyboard.
 
 ---
 
@@ -49,7 +49,7 @@ When you need to type, hit Down for voice dictation. When you need to scroll, do
 | Combo | Action |
 |-------|--------|
 | **Right + Down** (hold both) | Show hotkey overlay |
-| **Left + Down** (hold both) | Toggle USB/BLE transport (BLE build only) |
+| **Left + Down** (hold both) | Open Macros menu |
 
 ### Double-Click Speed
 
