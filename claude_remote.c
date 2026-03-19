@@ -893,6 +893,7 @@ typedef struct {
 
     /* hotkey overlay (remote mode) */
     bool show_hotkeys;
+    uint8_t hotkeys_page;
     bool right_held;
     bool down_held;
     uint32_t hotkeys_tick;
@@ -1665,28 +1666,76 @@ static void draw_remote(Canvas* canvas, ClaudeRemoteState* state) {
         return;
     }
 
-    /* ══════ HOTKEY OVERLAY (full-screen, triggered by 3+Down) ══════ */
+    /* ══════ HOTKEY OVERLAY (multi-page, triggered by Right+Down) ══════ */
     if(state->show_hotkeys) {
         canvas_draw_rbox(canvas, 0, 0, 64, 128, 3);
         canvas_set_color(canvas, ColorWhite);
 
         canvas_set_font(canvas, FontPrimary);
-        canvas_draw_str_aligned(canvas, 32, 10, AlignCenter, AlignCenter, "Hotkeys");
-        canvas_draw_line(canvas, 6, 18, 58, 18);
 
-        canvas_set_font(canvas, FontSecondary);
-        canvas_draw_str_aligned(canvas, 32, 28, AlignCenter, AlignCenter, "Double Tap:");
+        /* Helper: draw a small down arrow at (x, y_center) */
+        #define DRAW_DN(x, y) do { \
+            canvas_draw_line(canvas, (x)-2, (y)-2, (x)+2, (y)-2); \
+            canvas_draw_line(canvas, (x)-1, (y)-1, (x)+1, (y)-1); \
+            canvas_draw_line(canvas, (x), (y), (x), (y)); \
+        } while(0)
+        /* Helper: draw a small up arrow at (x, y_center) */
+        #define DRAW_UP(x, y) do { \
+            canvas_draw_line(canvas, (x), (y), (x), (y)); \
+            canvas_draw_line(canvas, (x)-1, (y)+1, (x)+1, (y)+1); \
+            canvas_draw_line(canvas, (x)-2, (y)+2, (x)+2, (y)+2); \
+        } while(0)
 
-        canvas_draw_str(canvas, 6, 42, "< Clear line");
-        canvas_draw_str(canvas, 6, 54, "> Previous cmd");
-        canvas_draw_str(canvas, 6, 66, "^ Page Up");
-        canvas_draw_str(canvas, 6, 78, "v Page Down");
-        canvas_draw_str(canvas, 6, 90, "o Switch win");
+        switch(state->hotkeys_page) {
+        case 0:
+            canvas_draw_str_aligned(canvas, 32, 10, AlignCenter, AlignCenter, "Single Tap");
+            canvas_draw_line(canvas, 6, 18, 58, 18);
+            canvas_set_font(canvas, FontSecondary);
 
-        canvas_draw_str_aligned(canvas, 32, 100, AlignCenter, AlignCenter, "Hold:");
-        canvas_draw_str(canvas, 6, 110, "< Backspace");
-        canvas_draw_str(canvas, 6, 118, "Bk Escape");
-        canvas_draw_str(canvas, 6, 126, "<+v Macros");
+            canvas_draw_str(canvas, 6, 28, "<  1 (approve)");
+            DRAW_UP(9, 36); canvas_draw_str(canvas, 16, 40, "2 (decline)");
+            canvas_draw_str(canvas, 6, 52, ">  3 (other)");
+            canvas_draw_str(canvas, 6, 64, "o  Enter");
+            DRAW_DN(9, 73); canvas_draw_str(canvas, 16, 76, "Dictation");
+
+            canvas_draw_str_aligned(canvas, 32, 100, AlignCenter, AlignCenter, "< > flip pages");
+            canvas_draw_str_aligned(canvas, 32, 120, AlignCenter, AlignCenter, "Ok to close");
+            break;
+
+        case 1:
+            canvas_draw_str_aligned(canvas, 32, 10, AlignCenter, AlignCenter, "Double Tap");
+            canvas_draw_line(canvas, 6, 18, 58, 18);
+            canvas_set_font(canvas, FontSecondary);
+
+            canvas_draw_str(canvas, 6, 28, "<<  Clear line");
+            canvas_draw_str(canvas, 6, 40, ">>  Prev cmd");
+            DRAW_UP(9, 48); DRAW_UP(15, 48); canvas_draw_str(canvas, 22, 52, "Page Up");
+            DRAW_DN(9, 61); DRAW_DN(15, 61); canvas_draw_str(canvas, 22, 64, "Page Down");
+            canvas_draw_str(canvas, 6, 76, "oo  Switch win");
+
+            canvas_draw_str_aligned(canvas, 32, 100, AlignCenter, AlignCenter, "< > flip pages");
+            canvas_draw_str_aligned(canvas, 32, 120, AlignCenter, AlignCenter, "Ok to close");
+            break;
+
+        case 2:
+            canvas_draw_str_aligned(canvas, 32, 10, AlignCenter, AlignCenter, "More");
+            canvas_draw_line(canvas, 6, 18, 58, 18);
+            canvas_set_font(canvas, FontSecondary);
+
+            canvas_draw_str(canvas, 6, 28, "Triple Tap:");
+            canvas_draw_str(canvas, 6, 40, "<<<  End of line");
+
+            canvas_draw_str(canvas, 6, 56, "Hold:");
+            canvas_draw_str(canvas, 6, 68, "<  Backspace");
+            canvas_draw_str(canvas, 6, 80, "Bk  Escape");
+
+            canvas_draw_str(canvas, 6, 96, "Combos:");
+            canvas_draw_str(canvas, 6, 108, ">+"); DRAW_DN(19, 106); canvas_draw_str(canvas, 25, 108, "Hotkeys");
+            canvas_draw_str(canvas, 6, 120, "<+"); DRAW_DN(19, 118); canvas_draw_str(canvas, 25, 120, "Macros");
+            break;
+        }
+        #undef DRAW_DN
+        #undef DRAW_UP
 
         canvas_set_color(canvas, ColorBlack);
         return;
@@ -2482,6 +2531,7 @@ static bool handle_remote_input(ClaudeRemoteState* state, InputEvent* event, Vie
         }
         if(state->right_held && state->down_held && !state->show_hotkeys) {
             state->show_hotkeys = true;
+            state->hotkeys_page = 0;
             state->hotkeys_tick = furi_get_tick();
             state->dc_pending = false;
             return true;
@@ -2536,10 +2586,16 @@ static bool handle_remote_input(ClaudeRemoteState* state, InputEvent* event, Vie
         return true;
     }
 
-    /* ── Dismiss hotkey overlay (ignore first 400ms to absorb combo release) ── */
+    /* ── Hotkey overlay: page flip or dismiss ── */
     if(state->show_hotkeys) {
         if(event->type == InputTypeShort && (furi_get_tick() - state->hotkeys_tick) > 400) {
-            state->show_hotkeys = false;
+            if(event->key == InputKeyRight) {
+                state->hotkeys_page = (state->hotkeys_page + 1) % 3;
+            } else if(event->key == InputKeyLeft) {
+                state->hotkeys_page = (state->hotkeys_page + 2) % 3;
+            } else {
+                state->show_hotkeys = false;
+            }
         }
         return true;
     }
