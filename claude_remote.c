@@ -131,19 +131,19 @@ typedef struct {
 /* ── Getting Started ── */
 
 static const ManualSection setup_sections[] = {
-    {"Installing Claude",
-     "Install via npm:\n"
-     " npm i -g @anthropic-ai/\n"
+    {"Installing",
+     "Mac/Linux/WSL:\n"
+     " curl -fsSL\n"
+     "  https://claude.ai/\n"
+     "  install.sh | bash\n\n"
+     "Homebrew:\n"
+     " brew install --cask\n"
      "   claude-code\n\n"
-     "Or via brew:\n"
-     " brew install claude-code\n\n"
-     "Requires Node.js 18+\n"
-     "and an Anthropic API key.\n\n"
-     "Set your key:\n"
-     " export ANTHROPIC_API_KEY\n"
-     "   =sk-ant-...\n\n"
-     "Or log in with:\n"
-     " claude login\n"},
+     "Windows PowerShell:\n"
+     " irm https://claude.ai/\n"
+     "  install.ps1 | iex\n\n"
+     "Update anytime:\n"
+     " claude update\n"},
 
     {"First Launch",
      "Open any terminal and type:\n"
@@ -153,473 +153,450 @@ static const ManualSection setup_sections[] = {
      "all files in your project.\n\n"
      "Start fresh:\n"
      " claude --new\n\n"
-     "Resume last session:\n"
-     " claude --resume\n"
-     " or /resume in chat\n\n"
+     "Continue last session:\n"
+     " claude -c\n\n"
+     "Resume by name:\n"
+     " claude -r \"name\"\n\n"
      "Print mode (no chat):\n"
-     " claude -p \"your query\"\n\n"
-     "Type your request at the\n"
-     "> prompt and press Enter.\n"},
-
-    {"System Requirements",
-     "Supported platforms:\n"
-     " macOS, Linux, WSL\n\n"
-     "Requirements:\n"
-     " Node.js 18 or later\n"
-     " npm or brew\n"
-     " Terminal with UTF-8\n\n"
-     "Recommended:\n"
-     " Git installed\n"
-     " Project in a git repo\n"
-     " CLAUDE.md in project root\n\n"
-     "API key or Claude login\n"
-     "required for operation.\n"},
+     " claude -p \"your query\"\n"},
 
     {"Authentication",
-     "Two ways to authenticate:\n\n"
-     "1. Claude Max subscription\n"
-     "   claude login\n"
+     "Four ways to authenticate:\n\n"
+     "1. Pro/Max subscription\n"
+     "   /login in session\n"
      "   Opens browser to sign in\n\n"
-     "2. API key\n"
+     "2. Teams/Enterprise\n"
+     "   Admin invite required\n\n"
+     "3. API key (Console)\n"
+     "   claude --console\n"
      "   export ANTHROPIC_API_KEY\n"
      "     =sk-ant-...\n\n"
-     "Manage sessions:\n"
-     " /login   sign in again\n"
-     " /logout  sign out\n"
-     " /status  check auth state\n\n"
-     "Max: flat monthly rate.\n"
-     "API: pay per token used.\n"},
+     "4. Cloud providers\n"
+     "   Bedrock, Vertex, Foundry\n"
+     "   (set via env vars)\n"},
+
+    {"Key CLI Flags",
+     "Session:\n"
+     " -c         continue last\n"
+     " -r \"name\"  resume by name\n"
+     " -p \"query\" print mode\n"
+     " -w feat    git worktree\n"
+     " -n \"name\"  name session\n\n"
+     "Model & effort:\n"
+     " --model opus|sonnet|haiku\n"
+     " --effort low|med|high|max\n\n"
+     "Permissions:\n"
+     " --permission-mode plan\n"
+     " --allowedTools \"Bash\"\n\n"
+     "Output:\n"
+     " --output-format json\n"
+     " --verbose\n"},
 };
 
 /* ── Workspace ── */
 
 static const ManualSection workspace_sections[] = {
-    {"Ideal Project Setup",
-     "Best results when Claude\n"
-     "can see your full project.\n\n"
-     "Recommended layout:\n"
-     " project/\n"
-     "   CLAUDE.md\n"
-     "   .claude/\n"
-     "   src/\n"
-     "   tests/\n"
-     "   package.json\n\n"
-     "Always run claude from\n"
-     "your project root dir.\n\n"
-     "Keep projects in git so\n"
-     "Claude can see history\n"
-     "and you can revert.\n"},
-
-    {"CLAUDE.md Guide",
-     "CLAUDE.md is a file Claude\n"
-     "reads automatically when\n"
-     "starting in a directory.\n\n"
+    {"CLAUDE.md",
+     "CLAUDE.md is auto-loaded\n"
+     "at every session start.\n\n"
+     "Locations (all loaded):\n"
+     " ./CLAUDE.md (project)\n"
+     " ./.claude/CLAUDE.md\n"
+     " ~/.claude/CLAUDE.md\n\n"
      "Use it to tell Claude:\n"
-     " - Project description\n"
-     " - Architecture notes\n"
+     " - Project architecture\n"
      " - Coding conventions\n"
      " - Build/test commands\n"
      " - Key file locations\n\n"
-     "Claude reads CLAUDE.md at\n"
-     "every session start. No\n"
-     "need to repeat context.\n\n"
-     "Place it in project root.\n"},
-
-    {"The /init Command",
-     "/init creates a CLAUDE.md\n"
-     "for your project.\n\n"
-     "Usage:\n"
-     " 1. Open claude in your\n"
-     "    project directory\n"
-     " 2. Type /init\n"
-     " 3. Claude analyzes your\n"
-     "    codebase\n"
-     " 4. Generates a CLAUDE.md\n\n"
-     "The file includes:\n"
-     " - Tech stack details\n"
-     " - Project structure\n"
-     " - Build commands\n"
-     " - Coding patterns found\n\n"
-     "Edit it to add your own\n"
-     "instructions or rules.\n"},
+     "Supports @imports:\n"
+     " @path/to/other/file.md\n\n"
+     "/init auto-generates one.\n"},
 
     {".claude/ Directory",
      "The .claude/ directory\n"
-     "stores project settings.\n\n"
-     "Structure:\n"
+     "stores project config.\n\n"
      " .claude/\n"
      "   settings.json\n"
+     "   settings.local.json\n"
      "   skills/\n"
-     "     custom_skill.md\n\n"
+     "   agents/\n"
+     "   rules/\n\n"
      "settings.json:\n"
-     " Stores allowed tools\n"
-     " and permissions.\n\n"
-     "skills/:\n"
-     " Custom skill files\n"
-     " Claude loads on start.\n\n"
-     "Commit .claude/ to share\n"
-     "config with your team.\n"},
+     " Permissions, hooks, env\n"
+     " Shared with team via git\n\n"
+     "settings.local.json:\n"
+     " Personal overrides\n"
+     " Gitignored by default\n\n"
+     "rules/: Scoped rules .md\n"},
 
-    {"Skills System",
-     "Skills are reusable prompts\n"
-     "Claude loads automatically.\n\n"
+    {"Memory System",
+     "Claude auto-saves notes\n"
+     "across sessions.\n\n"
      "Location:\n"
-     " .claude/skills/*.md\n\n"
-     "Each .md file is a skill.\n"
-     "Claude reads them at start\n"
-     "like CLAUDE.md.\n\n"
-     "Use for:\n"
-     " - Custom workflows\n"
-     " - Code review rules\n"
-     " - Response templates\n"
-     " - Domain knowledge\n\n"
-     "Skills replace the old\n"
-     "custom slash commands.\n"},
+     " ~/.claude/projects/\n"
+     "   <project>/memory/\n"
+     "   MEMORY.md (index)\n\n"
+     "First 200 lines of\n"
+     "MEMORY.md auto-loaded.\n\n"
+     "/memory to view and edit.\n\n"
+     "Memory types:\n"
+     " user, feedback, project,\n"
+     " reference\n\n"
+     "Disable:\n"
+     " autoMemoryEnabled: false\n"},
+
+    {"Skills",
+     "Reusable prompts invoked\n"
+     "as slash commands.\n\n"
+     "Locations:\n"
+     " .claude/skills/<name>/\n"
+     "   SKILL.md\n"
+     " ~/.claude/skills/<name>/\n"
+     "   SKILL.md\n\n"
+     "Built-in skills:\n"
+     " /simplify  review code\n"
+     " /batch     bulk changes\n"
+     " /debug     troubleshoot\n"
+     " /loop      recurring task\n\n"
+     "Custom skills use $ARGS\n"
+     "for user input.\n"
+     "/skills to list all.\n"},
+
+    {"Agents",
+     "Subagents run tasks in\n"
+     "parallel or isolation.\n\n"
+     "Built-in types:\n"
+     " Explore  fast read-only\n"
+     " Plan     architecture\n"
+     " General  full tools\n\n"
+     "Custom agents:\n"
+     " .claude/agents/NAME.md\n"
+     " ~/.claude/agents/NAME.md\n\n"
+     "Invoke: @agent-name or\n"
+     " claude --agent name\n\n"
+     "/agents to manage.\n"
+     "Ctrl+B backgrounds a task\n"
+     "Ctrl+T toggles task list\n"},
 };
 
 /* ── Commands ── */
 
 static const ManualSection commands_sections[] = {
-    {"Navigation & Basics",
-     "Key shortcuts:\n"
-     " Ctrl+C Cancel/interrupt\n"
-     " Ctrl+D Exit Claude Code\n"
-     " Esc    Cancel input\n"
-     " Tab    Autocomplete\n\n"
-     "Approval prompts:\n"
-     " 1  Yes / approve\n"
-     " 2  No / decline\n"
-     " 3  Other / alternative\n\n"
-     "Scrolling:\n"
-     " Up/Down for history\n\n"
-     "Voice (macOS):\n"
-     " Down  Start Dictation\n"},
+    {"Keyboard Shortcuts",
+     "Ctrl+C  Cancel/interrupt\n"
+     "Ctrl+D  Exit session\n"
+     "Ctrl+L  Clear screen\n"
+     "Ctrl+B  Background task\n"
+     "Ctrl+T  Toggle task list\n"
+     "Ctrl+F  Kill bg agents\n"
+     "Ctrl+G  Open in editor\n\n"
+     "Esc+Esc Rewind/undo\n"
+     "Shift+Tab Toggle mode\n"
+     "Alt+P   Switch model\n"
+     "Alt+T   Toggle thinking\n\n"
+     "Tab     Autocomplete\n"
+     "@       File path complete\n"
+     "/       Command complete\n"},
 
-    {"Session Management",
-     "/clear\n"
-     " Wipe conversation history\n"
-     " Start fresh in same dir\n\n"
-     "/compact\n"
-     " Summarize conversation\n"
-     " Reduces token usage\n"
-     " Use when context is big\n\n"
-     "/cost\n"
-     " Show token usage and\n"
-     " estimated cost for\n"
-     " current session\n\n"
-     "Sessions persist. Use\n"
-     " /resume in chat, or\n"
-     " claude --resume from CLI\n"},
+    {"Session Commands",
+     "/clear  Start fresh\n"
+     "/compact Compress context\n"
+     "/context View usage\n"
+     "/cost   Token usage\n"
+     "/status Auth/model info\n"
+     "/branch Fork conversation\n"
+     "/rewind Undo to a point\n"
+     "/rename Name this session\n"
+     "/export Save conversation\n"
+     "/copy   Copy last response\n\n"
+     "Resume sessions:\n"
+     " claude -c (most recent)\n"
+     " claude -r \"name\"\n"},
 
-    {"Configuration",
-     "/config\n"
-     " Open settings editor\n"
-     " Set model, theme, key\n\n"
-     "/terminal-setup\n"
-     " Fix terminal rendering\n"
-     " and display issues\n\n"
-     "Key settings:\n"
-     " Model selection\n"
-     " Auto-approve patterns\n"
-     " Theme (light/dark)\n"
-     " Notification sounds\n\n"
-     "Settings stored in:\n"
-     " ~/.claude/settings.json\n"},
+    {"Config Commands",
+     "/config  Settings editor\n"
+     "/model   Switch model\n"
+     "/effort  Set effort level\n"
+     " low|medium|high|max\n"
+     "/fast    Toggle fast mode\n"
+     "/vim     Toggle vim mode\n"
+     "/theme   Change theme\n"
+     "/memory  Edit memory files\n"
+     "/hooks   Browse hooks\n"
+     "/mcp     Manage MCP\n"
+     "/permissions View rules\n"
+     "/keybindings Edit keys\n"
+     "/terminal-setup Fix display\n"},
 
-    {"Debugging",
-     "/doctor\n"
-     " Diagnose setup issues\n"
-     " Check API connection\n"
-     " Verify permissions\n\n"
-     "Common issues:\n\n"
-     " \"API key not found\"\n"
-     "  -> export your key\n\n"
-     " \"Permission denied\"\n"
-     "  -> Check /config\n\n"
-     " Slow responses:\n"
-     "  -> /compact to reduce\n"
-     "     conversation size\n\n"
-     " Display broken:\n"
-     "  -> /terminal-setup\n"},
-
-    {"Slash Commands A-M",
-     "/bug\n"
-     " Report a Claude Code bug\n\n"
+    {"Tool Commands",
      "/commit\n"
-     " Auto-generate a commit\n"
-     " message and commit\n\n"
-     "/listen\n"
-     " Pause and wait for\n"
-     " file changes to resume\n\n"
-     "/login\n"
-     " Sign in to Anthropic\n\n"
-     "/logout\n"
-     " Sign out of session\n\n"
-     "/memory\n"
-     " Edit CLAUDE.md quickly\n\n"
-     "/model\n"
-     " Switch AI model mid-chat\n"
-     " Opus, Sonnet, or Haiku\n\n"
-     "/mcp\n"
-     " Manage MCP servers\n"},
+     " Auto-commit with message\n\n"
+     "/diff\n"
+     " Interactive diff viewer\n\n"
+     "/pr-comments [PR]\n"
+     " Fetch PR review comments\n\n"
+     "/security-review\n"
+     " Analyze pending changes\n\n"
+     "/doctor\n"
+     " Diagnose setup issues\n\n"
+     "/btw <question>\n"
+     " Side question mid-task\n\n"
+     "/plan\n"
+     " Enter plan mode\n"
+     " Read-only exploration\n"},
 
-    {"Slash Commands N-Z",
-     "/permissions\n"
-     " View and edit tool\n"
-     " access for this session\n\n"
-     "/pr-comments\n"
-     " Fetch GitHub PR review\n"
-     " comments into session\n\n"
-     "/rewind\n"
-     " Undo to a previous\n"
-     " point in conversation\n\n"
-     "/status\n"
-     " Show auth, model, and\n"
-     " session info\n\n"
-     "/vim\n"
-     " Toggle vim keybindings\n"
-     " in the input editor\n"},
+    {"More Commands",
+     "/login   Sign in\n"
+     "/logout  Sign out\n"
+     "/skills  List all skills\n"
+     "/agents  Manage agents\n"
+     "/tasks   View bg tasks\n"
+     "/voice   Toggle dictation\n\n"
+     "/install-github-app\n"
+     " Set up GitHub Actions\n\n"
+     "/remote-control\n"
+     " Control from claude.ai\n\n"
+     "/add-dir <path>\n"
+     " Add working directory\n\n"
+     "/bug  Report an issue\n"},
 };
 
 /* ── Tools ── */
 
 static const ManualSection tools_sections[] = {
-    {"File Operations",
+    {"File Tools",
      "Read\n"
-     " View file contents\n"
-     " Supports images & PDFs\n\n"
+     " View files, images, PDFs\n"
+     " No permission needed\n\n"
      "Write\n"
-     " Create new files\n"
-     " Overwrites if exists\n\n"
+     " Create/overwrite files\n\n"
      "Edit\n"
-     " Modify existing files\n"
-     " Find and replace text\n"
-     " Preserves context\n\n"
-     "NotebookEdit\n"
-     " Edit Jupyter notebooks\n"
-     " Add/remove/replace cells\n"},
-
-    {"Search & Explore",
+     " Targeted find & replace\n"
+     " Preserves surrounding\n\n"
+     "Glob\n"
+     " Find files by pattern\n"
+     " e.g. \"**/*.ts\"\n\n"
      "Grep\n"
      " Search file contents\n"
-     " Regex pattern matching\n"
-     " Filter by file type\n\n"
-     "Glob\n"
-     " Find files by name\n"
-     " Pattern matching\n"
-     " e.g. \"**/*.ts\"\n\n"
-     "Task (Explore agent)\n"
-     " Search across codebase\n"
-     " Find implementations\n"
-     " Answer architecture Q's\n\n"
-     "Let Claude search rather\n"
-     "than pasting file paths.\n"},
+     " Full regex support\n"
+     " Filter by file type\n"},
 
-    {"Sub-agents & Web",
-     "Task\n"
-     " Launch sub-agents:\n"
-     " Bash, Explore, Plan,\n"
-     " general-purpose\n\n"
+    {"Execution Tools",
      "Bash\n"
      " Run shell commands\n"
      " Git, npm, tests, builds\n\n"
+     "Agent\n"
+     " Spawn sub-agents:\n"
+     "  Explore (fast search)\n"
+     "  Plan (architecture)\n"
+     "  General (full tools)\n"
+     " Run in parallel or\n"
+     " in isolated worktrees\n\n"
+     "LSP\n"
+     " Language server features\n"
+     " Go-to-def, references\n\n"
+     "NotebookEdit\n"
+     " Edit Jupyter notebooks\n"},
+
+    {"Web & Task Tools",
      "WebFetch\n"
      " Fetch and analyze URLs\n\n"
      "WebSearch\n"
-     " Search the internet\n"
-     " Get current info\n\n"
-     "Agents run independently\n"
-     "and return results.\n"},
+     " Search the internet\n\n"
+     "AskUserQuestion\n"
+     " Multiple choice prompts\n"
+     " (what Claupper uses!)\n\n"
+     "Task tools:\n"
+     " TaskCreate, TaskUpdate\n"
+     " TaskList, TaskGet\n"
+     " TaskStop, TaskOutput\n\n"
+     "Scheduled tasks:\n"
+     " CronCreate, CronDelete\n"
+     " CronList\n"
+     " (or /loop command)\n"},
 };
 
 /* ── Workflows ── */
 
 static const ManualSection workflows_sections[] = {
-    {"New Project Setup",
-     "Step 1:\n"
-     " claude --new\n\n"
-     "Step 2:\n"
-     " Type /init\n"
-     " Creates CLAUDE.md\n\n"
-     "Step 3:\n"
-     " Describe what you want.\n"
-     " Be specific about\n"
-     " your tech stack.\n\n"
-     "Step 4:\n"
-     " Approve actions with 1\n"
-     " Decline with 2\n\n"
-     "Tip: Commit after each\n"
-     "major milestone.\n"},
+    {"New Project",
+     "1. claude --new\n"
+     "2. /init (makes CLAUDE.md)\n"
+     "3. Describe what you want\n"
+     "4. Approve with 1\n"
+     "   Decline with 2\n\n"
+     "Tips:\n"
+     " Be specific about stack\n"
+     " Commit after milestones\n"
+     " /compact when context\n"
+     "   gets too large\n\n"
+     "Worktree isolation:\n"
+     " claude -w feature-name\n"
+     " Parallel git branches\n"},
 
-    {"Debug & Test",
-     "Step 1:\n"
-     " Paste error or test\n"
-     " output into Claude.\n\n"
-     "Step 2:\n"
-     " Claude reads relevant\n"
-     " source files.\n\n"
-     "Step 3:\n"
-     " Review proposed fix.\n"
-     " Press 1 to approve\n"
-     " or 2 to decline.\n\n"
-     "Step 4:\n"
-     " Run tests to verify.\n\n"
-     "Tip: /compact if the\n"
-     "conversation gets long.\n"},
-
-    {"Code Review",
-     "Step 1:\n"
-     " Type /review or paste\n"
-     " a GitHub PR URL.\n\n"
-     "Step 2:\n"
-     " Claude reads all\n"
-     " changes in the diff.\n\n"
-     "Step 3:\n"
-     " Get feedback on:\n"
-     "  - Bug risks\n"
-     "  - Style issues\n"
-     "  - Performance\n"
-     "  - Missing tests\n\n"
-     "Step 4:\n"
-     " Ask Claude to fix\n"
-     " issues it found.\n"},
+    {"Debug & Review",
+     "Debug:\n"
+     " Paste error output\n"
+     " Claude reads source\n"
+     " /debug for deep analysis\n"
+     " /security-review for\n"
+     "   vulnerability scan\n\n"
+     "Code review:\n"
+     " Paste a GitHub PR URL\n"
+     " or /pr-comments to\n"
+     " fetch review feedback\n\n"
+     " /diff for interactive\n"
+     "   diff viewer\n\n"
+     "Esc+Esc to rewind if\n"
+     "Claude goes wrong way.\n"},
 
     {"Git & PRs",
-     "Commit workflow:\n"
-     " 1. Make changes w/ Claude\n"
-     " 2. Type /commit\n"
-     " 3. Claude writes message\n"
-     " 4. Approve to commit\n\n"
-     "PR review:\n"
-     " Paste a PR URL or use\n"
-     " /pr-comments to fetch\n"
-     " review feedback.\n\n"
-     "Tips:\n"
-     " Keep project in git repo\n"
-     " Commit after milestones\n"
-     " Claude reads git history\n"
-     " for better context.\n"},
+     "/commit\n"
+     " Auto-generates message\n"
+     " and commits for you\n\n"
+     "PR workflow:\n"
+     " Claude can create PRs\n"
+     " with gh CLI\n"
+     " /pr-comments fetches\n"
+     " review feedback\n\n"
+     "GitHub Actions:\n"
+     " /install-github-app\n"
+     " Automated code review\n"
+     " CI/CD integration\n\n"
+     "Claude reads git history\n"
+     "for better context.\n"},
+
+    {"Plan Mode",
+     "/plan enters plan mode.\n"
+     "Shift+Tab toggles it.\n\n"
+     "In plan mode:\n"
+     " Read-only exploration\n"
+     " No file changes\n"
+     " Claude researches first\n"
+     " Presents plan for review\n"
+     " You approve, then it\n"
+     " switches to execute\n\n"
+     "Use model 'opusplan':\n"
+     " Opus for planning\n"
+     " Sonnet for execution\n"
+     " Best of both worlds\n"},
 };
 
 /* ── Advanced ── */
 
 static const ManualSection advanced_sections[] = {
     {"Permissions",
-     "Claude asks before using\n"
-     "tools like Bash or Write.\n\n"
+     "Modes (Shift+Tab toggle):\n"
+     " default   ask each time\n"
+     " plan      read-only\n"
+     " acceptEdits auto-accept\n"
+     " dontAsk   auto-deny\n"
+     " bypass    skip all\n\n"
      "Settings hierarchy:\n"
-     " 1. Project .claude/\n"
-     "    settings.json\n"
-     " 2. User ~/.claude/\n"
-     "    settings.json\n"
-     " 3. Defaults\n\n"
-     "In settings.json:\n"
-     " \"allowedTools\": [...]\n"
-     " \"deniedTools\":  [...]\n\n"
-     "/permissions to view\n"
-     "current session rules.\n"},
+     " 1. Managed (org admin)\n"
+     " 2. .claude/settings.json\n"
+     " 3. ~/.claude/settings\n\n"
+     "Tool patterns:\n"
+     " Bash(git *)  allow git\n"
+     " Edit(*.md)   .md only\n"},
 
     {"MCP Servers",
-     "MCP = Model Context\n"
-     "Protocol. Connect external\n"
-     "tools to Claude Code.\n\n"
-     "Examples:\n"
-     " Database queries\n"
-     " API integrations\n"
-     " Custom data sources\n\n"
-     "Setup:\n"
-     " /mcp to manage servers\n"
-     " Configure in settings\n"
-     " or .claude/settings\n\n"
-     "MCP servers run as local\n"
-     "processes Claude can call\n"
-     "like built-in tools.\n"},
+     "Model Context Protocol.\n"
+     "Connect external tools.\n\n"
+     "Add servers:\n"
+     " claude mcp add\n"
+     "  --transport stdio\n"
+     "  name -- cmd args\n\n"
+     "Scopes:\n"
+     " .mcp.json    (project)\n"
+     " ~/.claude.json (user)\n\n"
+     "/mcp in session to manage\n"
+     " and handle OAuth.\n\n"
+     "@ mentions:\n"
+     " @server:resource/path\n"
+     " references MCP data\n"},
 
     {"Hooks",
-     "Hooks run your scripts\n"
-     "before/after Claude acts.\n\n"
-     "Types:\n"
-     " PreToolUse  before tool\n"
-     " PostToolUse after tool\n\n"
-     "Config in settings.json:\n"
-     " \"hooks\": {\n"
-     "   \"PreToolUse\": [{\n"
-     "     \"command\": \"./lint\"\n"
-     "   }]\n"
-     " }\n\n"
-     "Use cases:\n"
-     " Auto-lint on file save\n"
-     " Run tests after edit\n"
-     " Enforce code standards\n"},
+     "Run scripts on events.\n\n"
+     "Key events:\n"
+     " SessionStart\n"
+     " UserPromptSubmit\n"
+     " PreToolUse (can block)\n"
+     " PostToolUse\n"
+     " Stop, Notification\n"
+     " SubagentStart/Stop\n\n"
+     "Hook types:\n"
+     " command  shell script\n"
+     " http     POST to URL\n"
+     " prompt   LLM call\n"
+     " agent    subagent check\n\n"
+     "Exit 0=proceed, 2=block\n"},
 
-    {"Extended Thinking",
-     "Claude can think deeply\n"
-     "before responding.\n\n"
-     "When active, Claude uses\n"
-     "extra tokens reasoning\n"
-     "through hard problems.\n\n"
-     "Enable:\n"
-     " Type \"think\" in prompt\n"
-     " or toggle via /model\n\n"
-     "Best for:\n"
-     " Complex architecture\n"
-     " Multi-step debugging\n"
-     " Tricky logic problems\n\n"
-     "Uses more tokens but\n"
-     "improves output quality.\n"},
+    {"Effort & Thinking",
+     "Effort levels control\n"
+     "how deeply Claude thinks.\n\n"
+     "/effort or /model to set:\n"
+     " low    quick responses\n"
+     " medium balanced\n"
+     " high   thorough\n"
+     " max    deepest (Opus)\n"
+     " auto   model default\n\n"
+     "Alt+T toggles extended\n"
+     "thinking mid-session.\n\n"
+     "'ultrathink' in a skill\n"
+     "enables max thinking\n"
+     "within that skill.\n"},
 };
 
 /* ── Headless & CI ── */
 
 static const ManualSection headless_sections[] = {
-    {"Headless Mode",
-     "Run Claude without chat:\n"
-     " claude -p \"your query\"\n\n"
+    {"Print Mode",
+     "Non-interactive output:\n"
+     " claude -p \"query\"\n\n"
      "Pipe input:\n"
      " cat file | claude -p\n"
-     "   \"review this code\"\n\n"
-     "JSON output:\n"
-     " claude -p \"query\"\n"
-     "   --output-format json\n\n"
-     "Returns structured result\n"
-     "for scripting.\n\n"
-     "No interactive prompts.\n"
-     "No approval needed for\n"
-     "read-only operations.\n"},
+     "   \"review this\"\n\n"
+     "Output formats:\n"
+     " --output-format text\n"
+     " --output-format json\n"
+     " --output-format\n"
+     "   stream-json\n\n"
+     "Structured output:\n"
+     " --json-schema '{...}'\n\n"
+     "Limits:\n"
+     " --max-turns 10\n"
+     " --max-budget-usd 5.00\n"},
 
-    {"CI Integration",
-     "Use Claude in CI:\n\n"
-     " claude -p \"review PR\"\n"
-     "   --no-input\n\n"
-     "Key flags:\n"
-     " -p         print mode\n"
-     " --no-input no prompts\n"
-     " --model    pick model\n"
-     " --output-format json\n\n"
-     "Set ANTHROPIC_API_KEY in\n"
-     "CI environment variables.\n\n"
-     "Exit codes:\n"
-     " 0 = success\n"
-     " 1 = error\n\n"
-     "Great for automated review\n"
-     "and code generation.\n"},
+    {"CI & GitHub Actions",
+     "GitHub Actions:\n"
+     " /install-github-app\n"
+     " Automated code review\n"
+     " PR analysis in CI\n\n"
+     "Key flags for CI:\n"
+     " -p          print mode\n"
+     " --no-input  no prompts\n"
+     " --model     pick model\n"
+     " --fallback-model sonnet\n\n"
+     "Set ANTHROPIC_API_KEY\n"
+     "in CI env variables.\n\n"
+     "Exit: 0=ok, 1=error\n"},
 
-    {"Model Selection",
-     "Switch models anytime:\n"
-     " /model in chat\n"
-     " --model flag at launch\n\n"
-     "Available models:\n\n"
-     " Opus (most capable)\n"
-     "  Best reasoning\n"
-     "  Highest cost\n\n"
-     " Sonnet (balanced)\n"
-     "  Good speed + quality\n"
-     "  Default model\n\n"
-     " Haiku (fastest)\n"
-     "  Quick responses\n"
-     "  Lowest cost\n\n"
-     "Pick based on task\n"
-     "complexity and budget.\n"},
+    {"Models (Mar 2026)",
+     "/model or Alt+P to switch\n\n"
+     "Opus 4.6\n"
+     " Most capable reasoning\n"
+     " 1M context available\n"
+     " Supports /effort max\n\n"
+     "Sonnet 4.6\n"
+     " Fast + high quality\n"
+     " Default model\n"
+     " 1M context available\n\n"
+     "Haiku\n"
+     " Fastest, lowest cost\n\n"
+     "Aliases: opus, sonnet,\n"
+     " haiku, opus[1m],\n"
+     " sonnet[1m], opusplan\n"},
 };
 
 /* ── Category index ── */
@@ -627,7 +604,7 @@ static const ManualSection headless_sections[] = {
 static const ManualCategory categories[] = {
     {"Getting Started", setup_sections, 4},
     {"Workspace", workspace_sections, 5},
-    {"Commands", commands_sections, 6},
+    {"Commands", commands_sections, 5},
     {"Tools", tools_sections, 3},
     {"Workflows", workflows_sections, 4},
     {"Advanced", advanced_sections, 4},
