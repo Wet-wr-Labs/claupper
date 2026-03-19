@@ -811,6 +811,7 @@ typedef struct {
 #ifdef HID_TRANSPORT_BLE
     bool use_ble;
     bool ble_connected;
+    bool prev_ble_connected;
     BtStatus bt_status;
     bool bt_pair_screen; /* showing BT pairing sub-screen in settings */
     Bt* bt;
@@ -1071,9 +1072,24 @@ static uint16_t char_to_hid(char c) {
 static void bt_status_callback(BtStatus status, void* context) {
     ClaudeRemoteState* state = (ClaudeRemoteState*)context;
     state->bt_status = status;
+    bool was_connected = state->ble_connected;
     state->ble_connected = (status == BtStatusConnected);
     if(state->use_ble) {
         state->hid_connected = state->ble_connected;
+    }
+    /* Connection change feedback */
+    if(state->ble_connected && !was_connected) {
+        state->flash_label = "Connected";
+        state->flash_tick = furi_get_tick();
+        if(state->haptics_enabled) {
+            notification_message(state->notifications, &sequence_single_vibro);
+        }
+    } else if(!state->ble_connected && was_connected) {
+        state->flash_label = "Disconnected";
+        state->flash_tick = furi_get_tick();
+        if(state->haptics_enabled) {
+            notification_message(state->notifications, &sequence_double_vibro);
+        }
     }
     FURI_LOG_I(TAG, "BT status: %d, connected: %d", status, state->ble_connected);
 }
@@ -1404,9 +1420,14 @@ static void send_triple_action(ClaudeRemoteState* state, InputKey key) {
         FURI_LOG_I(TAG, "Triple: Up Arrow");
         break;
     case InputKeyRight:
-        SEND_HID(state, HID_KEYBOARD_RIGHT_ARROW);
-        label = "Right";
-        FURI_LOG_I(TAG, "Triple: Right Arrow");
+        SEND_HID(state, HID_KEYBOARD_D | KEY_MOD_LEFT_CTRL);
+        label = "Ctrl+D";
+        FURI_LOG_I(TAG, "Triple: Ctrl+D (exit)");
+        break;
+    case InputKeyOk:
+        SEND_HID(state, HID_KEYBOARD_L | KEY_MOD_LEFT_CTRL);
+        label = "Ctrl+L";
+        FURI_LOG_I(TAG, "Triple: Ctrl+L (clear screen)");
         break;
     case InputKeyDown:
         SEND_HID(state, HID_KEYBOARD_DOWN_ARROW);
@@ -1703,14 +1724,33 @@ static void draw_remote(Canvas* canvas, ClaudeRemoteState* state) {
             break;
 
         case 2:
-            canvas_draw_str_aligned(canvas, 32, 10, AlignCenter, AlignCenter, "More");
+            canvas_draw_str_aligned(canvas, 32, 10, AlignCenter, AlignCenter, "Triple Tap");
             canvas_draw_line(canvas, 6, 18, 58, 18);
             canvas_set_font(canvas, FontSecondary);
 
-            canvas_draw_str(canvas, 6, 28, "Triple Tap:");
-            canvas_draw_str(canvas, 6, 40, "<<<  End of line");
+            canvas_draw_str(canvas, 6, 32, "<<<  End of line");
+            DRAW_UP(9, 40);
+            canvas_draw_str(canvas, 16, 44, "Up Arrow");
+            canvas_draw_str(canvas, 6, 56, ">>>  Ctrl+D exit");
+            canvas_draw_str(canvas, 6, 68, "ooo  Ctrl+L clear");
+            DRAW_DN(9, 77);
+            DRAW_DN(15, 77);
+            DRAW_DN(21, 77);
+            canvas_draw_str(canvas, 28, 80, "Down Arrow");
 
-            canvas_draw_str(canvas, 6, 56, "Hold:");
+            canvas_draw_str_aligned(canvas, 32, 100, AlignCenter, AlignCenter, "< > flip pages");
+            canvas_draw_str_aligned(canvas, 32, 120, AlignCenter, AlignCenter, "Ok to close");
+            break;
+
+        case 3:
+            canvas_draw_str_aligned(canvas, 32, 10, AlignCenter, AlignCenter, "Hold & Combos");
+            canvas_draw_line(canvas, 6, 18, 58, 18);
+            canvas_set_font(canvas, FontSecondary);
+
+            canvas_draw_str(canvas, 6, 32, "Hold:");
+            canvas_draw_str(canvas, 6, 44, "o  Ctrl+C (cancel)");
+            DRAW_UP(9, 53);
+            canvas_draw_str(canvas, 16, 56, "Tab (complete)");
             canvas_draw_str(canvas, 6, 68, "<  Backspace");
             canvas_draw_str(canvas, 6, 80, "Bk  Escape");
 
@@ -2575,13 +2615,45 @@ static bool handle_remote_input(ClaudeRemoteState* state, InputEvent* event, Vie
         return true;
     }
 
+    /* ── Hold OK = Ctrl+C (interrupt Claude) ── */
+    if(event->key == InputKeyOk && event->type == InputTypeLong) {
+        if(state->dc_pending && state->dc_key == InputKeyOk) {
+            state->dc_pending = false;
+        }
+        if(state->hid_connected) {
+            SEND_HID(state, HID_KEYBOARD_C | KEY_MOD_LEFT_CTRL);
+            state->flash_label = "Ctrl+C";
+            state->flash_tick = furi_get_tick();
+            if(state->haptics_enabled) {
+                notification_message(state->notifications, &sequence_single_vibro);
+            }
+        }
+        return true;
+    }
+
+    /* ── Hold Up = Tab (autocomplete) ── */
+    if(event->key == InputKeyUp && event->type == InputTypeLong) {
+        if(state->dc_pending && state->dc_key == InputKeyUp) {
+            state->dc_pending = false;
+        }
+        if(state->hid_connected) {
+            SEND_HID(state, HID_KEYBOARD_TAB);
+            state->flash_label = "Tab";
+            state->flash_tick = furi_get_tick();
+            if(state->haptics_enabled) {
+                notification_message(state->notifications, &sequence_single_vibro);
+            }
+        }
+        return true;
+    }
+
     /* ── Hotkey overlay: page flip or dismiss ── */
     if(state->show_hotkeys) {
         if(event->type == InputTypeShort && (furi_get_tick() - state->hotkeys_tick) > 400) {
             if(event->key == InputKeyRight) {
-                state->hotkeys_page = (state->hotkeys_page + 1) % 3;
+                state->hotkeys_page = (state->hotkeys_page + 1) % 4;
             } else if(event->key == InputKeyLeft) {
-                state->hotkeys_page = (state->hotkeys_page + 2) % 3;
+                state->hotkeys_page = (state->hotkeys_page + 3) % 4;
             } else {
                 state->show_hotkeys = false;
             }
