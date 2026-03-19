@@ -13,9 +13,9 @@ npx claupper
 ```
 
 One command installs everything:
-- **Claude Code skill** → `~/.claude/skills/claupper/` (activate with `/claupper`)
 - **Flipper Zero apps** → `~/claupper/` (BLE + USB `.fap` files)
 - **Macro presets** → `~/claupper/macros/` (7 preset packs)
+- **Claude Code skill** (optional) → `~/.claude/skills/claupper/` (activate with `/claupper`)
 
 Then copy the `.fap` to your Flipper's SD card and you're set.
 
@@ -23,11 +23,13 @@ Then copy the `.fap` to your Flipper's SD card and you're set.
 
 ## How It Works
 
-Claude Code is a terminal app. Every interaction is: read output, pick an option. Claupper maps that entire workflow to five buttons.
+Claude Code is a terminal app. Every interaction is: read output, approve or decline, move on. Claupper maps that entire workflow to five buttons.
 
-The `/claupper` skill tells Claude to present every decision as exactly 3 numbered options via `AskUserQuestion`. You press 1, 2, or 3 on the d-pad, that's it, no Enter needed. Claude predicts what you want. Option 1 is always the most likely action. One click per decision.
+Press 1 to approve, 2 to decline, 3 for alternatives, OK to confirm. When you need to type, hit Down for voice dictation. When you need to scroll, double-click Up or Down. Double-click OK to Cmd+\` between terminal windows. Need to fire off a `/commit` or a custom prompt? Hold Left+Down to jump into Macros, fully customizable from a text file on the SD card. The whole point is you never touch your keyboard.
 
-When you need to type, hit Down for voice dictation. When you need to scroll, double-click Up or Down. Double-click OK to Cmd+\` between terminal windows. Need to fire off a `/commit` or a custom prompt? Hold Left+Down to jump into Macros, fully customizable from a text file on the SD card. The whole point is you never touch your keyboard.
+Works great with mobile too. Switch between Mac, Windows, and Linux in Settings and all hotkeys adapt automatically (Cmd+\` vs Alt+Tab, etc).
+
+Optionally, install the `/claupper` skill to have Claude present every decision as exactly 3 numbered options. One click per decision, no Enter needed.
 
 ---
 
@@ -104,29 +106,6 @@ Left from Home.
 
 ---
 
-## Claude Code Skill
-
-The `/claupper` skill activates Claupper Mode in Claude Code:
-
-```
-1. [What you most likely want — do it]
-2. [Show details / slower path]
-3. [Change direction / more options]
-```
-
-Every `AskUserQuestion` call includes a built-in "Other" field for free-text input — no button wasted on "type your own."
-
-The skill tells Claude to:
-- **Predict** what you want — Option 1 is always the most likely action
-- **Auto-continue** when the next step is obvious
-- **Batch** small decisions instead of asking one at a time
-- **Never stop** without presenting choices
-- **Generate commit messages** automatically
-
-See [`skill/claupper/SKILL.md`](skill/claupper/SKILL.md) for the full spec.
-
----
-
 ## Two Builds, One Codebase
 
 | | **Claupper BLE** | **Claupper USB** |
@@ -182,6 +161,29 @@ npx claupper --uninstall
 ```
 
 Removes the Claude Code skill and `~/claupper/` directory. Does not remove `.fap` files already on your Flipper SD card.
+
+---
+
+## Claude Code Skill (Optional)
+
+The `/claupper` skill activates Claupper Mode in Claude Code:
+
+```
+1. [What you most likely want — do it]
+2. [Show details / slower path]
+3. [Change direction / more options]
+```
+
+Every `AskUserQuestion` call includes a built-in "Other" field for free-text input — no button wasted on "type your own."
+
+The skill tells Claude to:
+- **Predict** what you want — Option 1 is always the most likely action
+- **Auto-continue** when the next step is obvious
+- **Batch** small decisions instead of asking one at a time
+- **Never stop** without presenting choices
+- **Generate commit messages** automatically
+
+See [`skill/claupper/SKILL.md`](skill/claupper/SKILL.md) for the full spec.
 
 ---
 
