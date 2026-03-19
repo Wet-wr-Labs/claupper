@@ -1673,18 +1673,20 @@ static void draw_remote(Canvas* canvas, ClaudeRemoteState* state) {
 
         canvas_set_font(canvas, FontPrimary);
 
-        /* Helper: draw a small down arrow at (x, y_center) */
-        #define DRAW_DN(x, y) do { \
-            canvas_draw_line(canvas, (x)-2, (y)-2, (x)+2, (y)-2); \
-            canvas_draw_line(canvas, (x)-1, (y)-1, (x)+1, (y)-1); \
-            canvas_draw_line(canvas, (x), (y), (x), (y)); \
-        } while(0)
-        /* Helper: draw a small up arrow at (x, y_center) */
-        #define DRAW_UP(x, y) do { \
-            canvas_draw_line(canvas, (x), (y), (x), (y)); \
-            canvas_draw_line(canvas, (x)-1, (y)+1, (x)+1, (y)+1); \
-            canvas_draw_line(canvas, (x)-2, (y)+2, (x)+2, (y)+2); \
-        } while(0)
+/* Helper: draw a small down arrow at (x, y_center) */
+#define DRAW_DN(x, y)                                                 \
+    do {                                                              \
+        canvas_draw_line(canvas, (x) - 2, (y) - 2, (x) + 2, (y) - 2); \
+        canvas_draw_line(canvas, (x) - 1, (y) - 1, (x) + 1, (y) - 1); \
+        canvas_draw_line(canvas, (x), (y), (x), (y));                 \
+    } while(0)
+/* Helper: draw a small up arrow at (x, y_center) */
+#define DRAW_UP(x, y)                                                 \
+    do {                                                              \
+        canvas_draw_line(canvas, (x), (y), (x), (y));                 \
+        canvas_draw_line(canvas, (x) - 1, (y) + 1, (x) + 1, (y) + 1); \
+        canvas_draw_line(canvas, (x) - 2, (y) + 2, (x) + 2, (y) + 2); \
+    } while(0)
 
         switch(state->hotkeys_page) {
         case 0:
@@ -1693,10 +1695,12 @@ static void draw_remote(Canvas* canvas, ClaudeRemoteState* state) {
             canvas_set_font(canvas, FontSecondary);
 
             canvas_draw_str(canvas, 6, 28, "<  1 (approve)");
-            DRAW_UP(9, 36); canvas_draw_str(canvas, 16, 40, "2 (decline)");
+            DRAW_UP(9, 36);
+            canvas_draw_str(canvas, 16, 40, "2 (decline)");
             canvas_draw_str(canvas, 6, 52, ">  3 (other)");
             canvas_draw_str(canvas, 6, 64, "o  Enter");
-            DRAW_DN(9, 73); canvas_draw_str(canvas, 16, 76, "Dictation");
+            DRAW_DN(9, 73);
+            canvas_draw_str(canvas, 16, 76, "Dictation");
 
             canvas_draw_str_aligned(canvas, 32, 100, AlignCenter, AlignCenter, "< > flip pages");
             canvas_draw_str_aligned(canvas, 32, 120, AlignCenter, AlignCenter, "Ok to close");
@@ -1709,8 +1713,12 @@ static void draw_remote(Canvas* canvas, ClaudeRemoteState* state) {
 
             canvas_draw_str(canvas, 6, 28, "<<  Clear line");
             canvas_draw_str(canvas, 6, 40, ">>  Prev cmd");
-            DRAW_UP(9, 48); DRAW_UP(15, 48); canvas_draw_str(canvas, 22, 52, "Page Up");
-            DRAW_DN(9, 61); DRAW_DN(15, 61); canvas_draw_str(canvas, 22, 64, "Page Down");
+            DRAW_UP(9, 48);
+            DRAW_UP(15, 48);
+            canvas_draw_str(canvas, 22, 52, "Page Up");
+            DRAW_DN(9, 61);
+            DRAW_DN(15, 61);
+            canvas_draw_str(canvas, 22, 64, "Page Down");
             canvas_draw_str(canvas, 6, 76, "oo  Switch win");
 
             canvas_draw_str_aligned(canvas, 32, 100, AlignCenter, AlignCenter, "< > flip pages");
@@ -1730,12 +1738,16 @@ static void draw_remote(Canvas* canvas, ClaudeRemoteState* state) {
             canvas_draw_str(canvas, 6, 80, "Bk  Escape");
 
             canvas_draw_str(canvas, 6, 96, "Combos:");
-            canvas_draw_str(canvas, 6, 108, ">+"); DRAW_DN(19, 106); canvas_draw_str(canvas, 25, 108, "Hotkeys");
-            canvas_draw_str(canvas, 6, 120, "<+"); DRAW_DN(19, 118); canvas_draw_str(canvas, 25, 120, "Macros");
+            canvas_draw_str(canvas, 6, 108, ">+");
+            DRAW_DN(19, 106);
+            canvas_draw_str(canvas, 25, 108, "Hotkeys");
+            canvas_draw_str(canvas, 6, 120, "<+");
+            DRAW_DN(19, 118);
+            canvas_draw_str(canvas, 25, 120, "Macros");
             break;
         }
-        #undef DRAW_DN
-        #undef DRAW_UP
+#undef DRAW_DN
+#undef DRAW_UP
 
         canvas_set_color(canvas, ColorBlack);
         return;
