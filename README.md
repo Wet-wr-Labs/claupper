@@ -23,9 +23,9 @@ Then copy the `.fap` to your Flipper's SD card and you're set.
 
 ## How It Works
 
-Claude Code is a terminal app. Every interaction is: read output, pick an option, hit Enter. Claupper maps that entire workflow to five buttons.
+Claude Code is a terminal app. Every interaction is: read output, pick an option. Claupper maps that entire workflow to five buttons.
 
-The `/claupper` skill tells Claude to present every decision as exactly 3 numbered options. You press 1, 2, or 3 on the d-pad, then Enter. Claude predicts what you want — Option 1 is always the most likely action. Press 1, press Enter, repeat. That's it.
+The `/claupper` skill tells Claude to present every decision as exactly 3 numbered options via `AskUserQuestion`. You press 1, 2, or 3 on the d-pad — that's it, no Enter needed. Claude predicts what you want — Option 1 is always the most likely action. One click per decision.
 
 When you need to type, hit Down for voice dictation. When you need to scroll, double-click. When you need a slash command, swipe up to Macros.
 
