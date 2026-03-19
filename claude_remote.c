@@ -22,6 +22,26 @@
 
 #define TAG "CRemote"
 
+/* ── Display brightness ── */
+
+static const NotificationMessage message_brightness_dim = {
+    .type = NotificationMessageTypeForceDisplayBrightnessSetting,
+    .data.forced_settings.display_brightness = 0.1f,
+};
+
+static const NotificationSequence sequence_backlight_dim = {
+    &message_display_backlight_enforce_on,
+    &message_brightness_dim,
+    NULL,
+};
+
+static const NotificationSequence sequence_backlight_restore = {
+    &message_display_backlight_enforce_auto,
+    &message_force_display_brightness_setting_1f,
+    &message_display_backlight_on,
+    NULL,
+};
+
 /* ── Claude orange LED ── */
 
 static const NotificationMessage message_green_128 = {
@@ -1083,14 +1103,13 @@ static void bt_status_callback(BtStatus status, void* context) {
 
 /* ── HID helpers ── */
 
-#define HID_CONSUMER_DICTATION \
-    0x00CF /* Consumer Page: Voice Command (triggers Edit > Start Dictation on macOS) */
+#define HID_CONSUMER_DICTATION 0x00CF /* Consumer Usage: Voice Command */
 
 #ifdef HID_TRANSPORT_BLE
 static void send_hid_key_ble(FuriHalBleProfileBase* profile, uint16_t keycode) {
     ble_profile_hid_kb_press(profile, keycode);
     furi_delay_ms(150);
-    ble_profile_hid_kb_release(profile, keycode);
+    ble_profile_hid_kb_release_all(profile);
 }
 static void send_consumer_key_ble(FuriHalBleProfileBase* profile, uint16_t usage) {
     ble_profile_hid_consumer_key_press(profile, usage);
@@ -1397,9 +1416,9 @@ static void send_triple_action(ClaudeRemoteState* state, InputKey key) {
     const char* label = NULL;
     switch(key) {
     case InputKeyLeft:
-        SEND_HID(state, HID_KEYBOARD_LEFT_ARROW);
-        label = "Left";
-        FURI_LOG_I(TAG, "Triple: Left Arrow");
+        SEND_HID(state, HID_KEYBOARD_N | KEY_MOD_LEFT_CTRL);
+        label = "End";
+        FURI_LOG_I(TAG, "Triple: Ctrl+N (end of line)");
         break;
     case InputKeyUp:
         SEND_HID(state, HID_KEYBOARD_UP_ARROW);
@@ -1578,12 +1597,12 @@ static void draw_home(Canvas* canvas) {
     canvas_draw_line(canvas, 11, 76, 14, 80);
     canvas_draw_str(canvas, 21, 82, "Macros");
 
-    /* OK button (filled) → USB */
+    /* OK button (filled) → Remote */
     canvas_draw_box(canvas, 4, 84, 14, 10);
     canvas_set_color(canvas, ColorWhite);
     canvas_draw_str_aligned(canvas, 11, 89, AlignCenter, AlignCenter, "OK");
     canvas_set_color(canvas, ColorBlack);
-    canvas_draw_str(canvas, 21, 92, "USB");
+    canvas_draw_str(canvas, 21, 92, "Remote");
 
     /* Left arrow → Settings */
     canvas_draw_frame(canvas, 4, 94, 14, 10);
@@ -2170,10 +2189,20 @@ static void draw_bt_pairing(Canvas* canvas, ClaudeRemoteState* state) {
     canvas_draw_str(canvas, 16, 28, status_str);
 
     /* Instructions */
-    canvas_draw_str(canvas, 2, 36, "Pair your device to:");
+    if(state->bt_status == BtStatusConnected) {
+        canvas_draw_str(canvas, 2, 40, "Device paired and");
+        canvas_draw_str(canvas, 2, 50, "ready to use.");
+    } else {
+        canvas_draw_str(canvas, 2, 40, "On your computer, open");
+        canvas_draw_str(canvas, 2, 50, "BT settings and pair to:");
+        canvas_set_font(canvas, FontPrimary);
+        canvas_draw_str_aligned(canvas, 64, 58, AlignCenter, AlignCenter, "Flipper Zero");
+    }
 
-    canvas_set_font(canvas, FontPrimary);
-    canvas_draw_str_aligned(canvas, 64, 50, AlignCenter, AlignBottom, "Flipper Zero");
+    /* Unpair button */
+    canvas_set_font(canvas, FontSecondary);
+    canvas_draw_rframe(canvas, 72, 2, 54, 12, 3);
+    canvas_draw_str_aligned(canvas, 99, 9, AlignCenter, AlignCenter, "Unpair");
 }
 #endif
 
@@ -2378,10 +2407,11 @@ static bool handle_home_input(ClaudeRemoteState* state, InputEvent* event, ViewP
     switch(event->key) {
     case InputKeyOk:
 #ifdef HID_TRANSPORT_BLE
-        state->use_ble = false;
-        state->hid_connected = furi_hal_hid_is_connected();
+        state->use_ble = true;
+        state->hid_connected = state->ble_connected;
 #endif
         state->mode = ModeRemote;
+        notification_message(state->notifications, &sequence_backlight_dim);
         if(state->led_enabled) {
             notification_message(state->notifications, &sequence_solid_blue);
         }
@@ -2391,6 +2421,7 @@ static bool handle_home_input(ClaudeRemoteState* state, InputEvent* event, ViewP
         state->use_ble = true;
         state->hid_connected = state->ble_connected;
         state->mode = ModeRemote;
+        notification_message(state->notifications, &sequence_backlight_dim);
         if(state->led_enabled) {
             notification_message(state->notifications, &sequence_solid_blue);
         }
@@ -2425,6 +2456,7 @@ static bool handle_home_input(ClaudeRemoteState* state, InputEvent* event, ViewP
         state->macro_index = 0;
         state->macro_scroll_tick = furi_get_tick();
         state->mode = ModeMacros;
+        notification_message(state->notifications, &sequence_backlight_dim);
         if(state->led_enabled) {
             notification_message(state->notifications, &sequence_solid_orange);
         }
@@ -2515,9 +2547,11 @@ static bool handle_remote_input(ClaudeRemoteState* state, InputEvent* event, Vie
 
     if(event->type != InputTypeShort && event->type != InputTypeLong) return true;
 
-    /* Suppress Short events after Left+Down combo (absorb both key releases) */
+    /* Suppress Left/Down Short events after Left+Down combo (absorb releases) */
     if(state->combo_tick && (furi_get_tick() - state->combo_tick) < 500) {
-        return true;
+        if(event->key == InputKeyLeft || event->key == InputKeyDown) {
+            return true;
+        }
     }
 
     if(event->key == InputKeyBack) {
@@ -2535,6 +2569,7 @@ static bool handle_remote_input(ClaudeRemoteState* state, InputEvent* event, Vie
             /* Short-press Back → go Home (discard pending key, don't send it) */
             state->dc_pending = false;
             state->mode = ModeHome;
+            notification_message(state->notifications, &sequence_backlight_restore);
             if(state->led_enabled) {
                 notification_message(state->notifications, &sequence_solid_orange);
             }
@@ -2559,14 +2594,15 @@ static bool handle_remote_input(ClaudeRemoteState* state, InputEvent* event, Vie
     uint32_t now = furi_get_tick();
     if(state->dc_pending && event->key == state->dc_key &&
        (now - state->dc_tick) < dc_timeout(state)) {
-        if(state->dc_count == 2) {
-            /* triple-click detected */
+        if(state->dc_count >= 2) {
+            /* triple-click detected — execute immediately */
             state->dc_pending = false;
             send_triple_action(state, event->key);
         } else {
-            /* double-click detected — defer to wait for possible triple */
+            /* double-click detected — execute immediately */
+            state->dc_pending = false;
             state->dc_count = 2;
-            state->dc_tick = now;
+            send_double_action(state, event->key);
         }
     } else {
         /* flush any different pending key first */
@@ -2891,6 +2927,7 @@ static bool handle_macros_input(ClaudeRemoteState* state, InputEvent* event, Vie
         break;
     case InputKeyBack:
         state->mode = ModeHome;
+        notification_message(state->notifications, &sequence_backlight_restore);
         if(state->led_enabled) {
             notification_message(state->notifications, &sequence_solid_orange);
         }

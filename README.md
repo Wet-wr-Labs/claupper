@@ -19,12 +19,13 @@ Then copy the right `.fap` to your Flipper's SD card and you're set.
 
 ---
 
-## What's New in v0.24
+## What's New in v0.26
 
-- **Tour screen** — 4-page onboarding walkthrough on first launch with "don't ask again" option
-- **Claude Code skill** — `/claupper` command installs via `npx claupper`, uses `AskUserQuestion` for native clickable buttons with built-in "Other" for free text
-- **npx installer** — one command sets up skill + Flipper apps + macro presets
-- **Improved UI** — text fits 128px screen, proper checkmark rendering, landscape tour pages
+- **Dim backlight in Remote/Macros** — screen stays dimly lit instead of going black, restores on exit
+- **BLE default** — Ok button from Home now enters BLE mode (was USB). Left+Down still toggles transport.
+- **Triple-tap Left** — sends Ctrl+N (jump to end of line)
+- **Restored dictation** — consumer key 0x00CF for macOS dictation (F5 doesn't work from non-Apple keyboards)
+- **BLE reliability** — `release_all` on every key send prevents stuck modifiers
 
 ---
 
@@ -142,6 +143,12 @@ Persists preference to settings file. Skippable with Back button.
 
 ---
 
+## Known Issues
+
+- **Switch Window + Universal Control**: Double-click OK sends `Cmd+`` to switch terminal windows. If you use Universal Control (keyboard/mouse sharing between Macs), macOS may route this to a window on the other Mac. This is a macOS limitation, not a Claupper bug. Workaround: disable Universal Control in System Settings → Displays → Advanced, or disconnect the other Mac before using Claupper. See [#20](https://github.com/Wet-wr-Labs/claupper/issues/20).
+
+---
+
 ## Two Builds
 
 | | **Claupper BLE** | **Claupper USB** |
@@ -200,6 +207,8 @@ Removes the Claude Code skill and `~/claupper/` directory. Does not remove `.fap
 
 | Version | Highlights |
 |---------|-----------|
+| **v0.26** | Dim backlight, BLE default, triple-tap Ctrl+N, restored dictation, BLE release_all |
+| **v0.25** | Dual-transport toggle (Left+Down), BLE crash fix, macro improvements |
 | **v0.24** | Tour screen, Claude Code skill (`/claupper`), `npx claupper` installer, AskUserQuestion integration |
 | **v0.23** | Settings (Haptics/LED/OS), Windows + Linux support, macros, long-press Escape |
 | **v0.2** | Quiz mode with difficulty picker, all multiple-choice, Mac-style answer modal |
