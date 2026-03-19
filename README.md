@@ -185,12 +185,6 @@ Removes the Claude Code skill and `~/claupper/` directory. Does not remove `.fap
 
 ---
 
-## Known Issues
-
-- **Switch Window + Universal Control**: Double-click OK sends Cmd+\` to switch terminal windows. If you share keyboard/mouse between Macs via Universal Control, macOS may route this to the other Mac. Workaround: disable Universal Control in System Settings → Displays → Advanced. See [#20](https://github.com/Wet-wr-Labs/claupper/issues/20).
-
----
-
 ## Version History
 
 | Version | Highlights |
