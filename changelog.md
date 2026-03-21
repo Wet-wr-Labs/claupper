@@ -1,3 +1,15 @@
+## v0.28
+- Rename from Claupper to Agentic Remote (trademark-safe)
+- BLE build: OK → USB remote, Right → BT remote
+- Lazy USB HID init on BLE build (qFlipper screenshots work)
+- Settings reordered: OS, Bluetooth, Haptics, LED, Tour, DblClk
+- Manual and settings show 4 items instead of 3
+- Selection boxes no longer overlap scrollbar
+- Fix triple-tap detection (3rd tap was being swallowed)
+- Fix double-click OK switching windows twice
+- New AR icon, updated splash tagline
+- Submitted USB build to official Flipper App Catalog
+
 ## v0.27
 - Fix combo state (held-key flags) leaking across mode transitions
 - Macros screen now portrait with 9 visible items instead of 4

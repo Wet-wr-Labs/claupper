@@ -100,11 +100,12 @@ Left from Home.
 
 | Setting | Values | Default |
 |---------|--------|---------|
+| **OS** | Mac / Win / Linux | Mac |
+| **Bluetooth** (BLE only) | Pairing / Forget devices | — |
 | **Haptics** | ON / OFF | ON |
 | **LED** | ON / OFF | ON |
-| **OS** | Mac / Win / Linux | Mac |
-| **Double-Click Speed** | Normal / Slow / Fast | Normal |
 | **Tour** | Show / Don't show | Show |
+| **Double-Click Speed** | Normal / Slow / Fast | Normal |
 
 ---
 
@@ -118,7 +119,11 @@ Left from Home.
 | **Best for** | Couch mode, across the room | Desk use, no pairing needed |
 | **SD path** | `apps/Bluetooth/` | `apps/USB/` |
 
-Same C source file, same features — compile-time `#ifdef` switching selects the HID transport. The BLE build includes a USB fallback (toggle with Left+Down).
+Same C source file, same features — compile-time `#ifdef` switching selects the HID transport. The BLE build includes both USB and BT modes (OK → USB, Right → BT from Home).
+
+> **Why does BLE require custom firmware?** Stock Flipper firmware doesn't expose the BLE HID APIs needed for wireless keyboard emulation. [Momentum](https://momentum-fw.dev) and [Unleashed](https://github.com/DarkFlippers/unleashed-firmware) firmware add the `ble_profile` library that makes wireless HID possible. Installing Momentum takes ~2 minutes and doesn't void your warranty — it's fully reversible.
+
+**USB version submitted to the [Official Flipper App Catalog](https://github.com/flipperdevices/flipper-application-catalog/pull/987)** — pending review.
 
 ---
 
@@ -193,6 +198,7 @@ See [`skill/claupper/SKILL.md`](skill/claupper/SKILL.md) for the full spec.
 
 | Version | Highlights |
 |---------|-----------|
+| **v0.28** | Rename to Agentic Remote, lazy USB HID (qFlipper screenshots work), BLE build: OK→USB / Right→BT, settings reorder, fix triple-tap and double-switch, AR icon, submitted to Flipper App Catalog |
 | **v0.27** | Fix combo state leaking between modes, portrait macros screen (9 visible), hold-to-scroll in macros, hint bar shows both combos, macros Back returns to Remote |
 | **v0.26** | Dim backlight in remote modes, BLE default, triple-tap Ctrl+N, restored dictation, BLE release_all |
 | **v0.25** | Dual-transport toggle (Left+Down), BLE crash fix, macro improvements |
