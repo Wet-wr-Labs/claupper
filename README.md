@@ -67,7 +67,7 @@ The main mode. Screen dims to save battery — stays visible but won't go black.
 
 ### Macros
 
-Up from Home. Up to 24 custom text macros loaded from SD card. Two types:
+Up from Home, or Left+Down from Remote. Up to 24 custom text macros loaded from SD card. Hold Up/Down to scroll continuously. Two types:
 
 - **Text macros** — typed character-by-character (e.g., `/commit`, `Run the tests`)
 - **Combo macros** — modifier key combos (e.g., `!Ctrl+C`, `!Cmd+K`)
@@ -191,6 +191,7 @@ See [`skill/claupper/SKILL.md`](skill/claupper/SKILL.md) for the full spec.
 
 | Version | Highlights |
 |---------|-----------|
+| **v0.27** | Fix combo state leaking between modes, portrait macros screen (9 visible), hold-to-scroll in macros, hint bar shows both combos, macros Back returns to Remote |
 | **v0.26** | Dim backlight in remote modes, BLE default, triple-tap Ctrl+N, restored dictation, BLE release_all |
 | **v0.25** | Dual-transport toggle (Left+Down), BLE crash fix, macro improvements |
 | **v0.24** | Tour screen, Claude Code skill (`/claupper`), `npx claupper` installer |

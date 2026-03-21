@@ -882,6 +882,7 @@ typedef struct {
 
     /* combo cooldown — suppress Short events after Left+Down toggle */
     uint32_t combo_tick;
+    bool macros_from_remote; /* true if macros opened via Left+Down combo in remote */
 } ClaudeRemoteState;
 
 /* ── Utility ── */
@@ -1790,8 +1791,8 @@ static void draw_remote(Canvas* canvas, ClaudeRemoteState* state) {
 
     /* ══════ HINT BAR ══════ */
     canvas_draw_line(canvas, 8, 74, 56, 74);
-    canvas_draw_str_aligned(canvas, 32, 83, AlignCenter, AlignCenter, "Hotkeys");
-    canvas_draw_str_aligned(canvas, 32, 93, AlignCenter, AlignCenter, "Right+Down");
+    canvas_draw_str_aligned(canvas, 32, 83, AlignCenter, AlignCenter, "Hotkeys: R+D");
+    canvas_draw_str_aligned(canvas, 32, 93, AlignCenter, AlignCenter, "Macros: L+D");
 
     /* ══════ FLASH OVERLAY ══════ */
     if(state->flash_label && (furi_get_tick() - state->flash_tick) < FLASH_DURATION_TICKS) {
@@ -2247,31 +2248,34 @@ static void draw_bt_pairing(Canvas* canvas, ClaudeRemoteState* state) {
 /* ── Macros screen (landscape 128x64) ── */
 
 static void draw_macros(Canvas* canvas, ClaudeRemoteState* state) {
+    /* Portrait: 64w x 128h */
     canvas_clear(canvas);
 
     canvas_set_font(canvas, FontPrimary);
-    canvas_draw_str(canvas, 2, 10, "Macros");
-    canvas_draw_line(canvas, 0, 13, 128, 13);
+    canvas_draw_str_aligned(canvas, 32, 8, AlignCenter, AlignCenter, "Macros");
+    canvas_draw_line(canvas, 4, 15, 60, 15);
 
     canvas_set_font(canvas, FontSecondary);
 
     if(state->macro_count == 0) {
-        canvas_draw_str_aligned(canvas, 64, 30, AlignCenter, AlignCenter, "No macros found");
-        canvas_draw_str_aligned(canvas, 64, 42, AlignCenter, AlignCenter, "Add lines to:");
-        canvas_draw_str(canvas, 4, 52, MACROS_PATH);
+        canvas_draw_str_aligned(canvas, 32, 45, AlignCenter, AlignCenter, "No macros found");
+        canvas_draw_str_aligned(canvas, 32, 60, AlignCenter, AlignCenter, "Add lines to");
+        canvas_draw_str_aligned(canvas, 32, 72, AlignCenter, AlignCenter, "macros.txt on SD");
     } else {
+        uint8_t visible_count = 9;
         uint8_t first_visible = 0;
-        if(state->macro_index > 3) first_visible = state->macro_index - 3;
+        if(state->macro_index >= visible_count)
+            first_visible = state->macro_index - (visible_count - 1);
 
-        for(int i = 0; i < 4; i++) {
+        for(int i = 0; i < visible_count; i++) {
             uint8_t idx = first_visible + i;
             if(idx >= state->macro_count) break;
 
-            int y = 22 + i * 11;
+            int y = 27 + i * 12;
             bool selected = (idx == state->macro_index);
 
             if(selected) {
-                canvas_draw_box(canvas, 0, y - 8, 122, 11);
+                canvas_draw_box(canvas, 0, y - 9, 60, 12);
                 canvas_set_color(canvas, ColorWhite);
             }
 
@@ -2285,12 +2289,12 @@ static void draw_macros(Canvas* canvas, ClaudeRemoteState* state) {
 
             if(selected) {
                 uint16_t text_w = canvas_string_width(canvas, display);
-                uint16_t max_w = 118; /* visible text area */
+                uint16_t max_w = 54; /* narrower in portrait */
                 if(text_w > max_w) {
-                    /* Marquee: pause 1s, then scroll, pause at end, loop */
+                    /* Marquee: pause, scroll, pause at end, loop */
                     uint32_t elapsed = furi_get_tick() - state->macro_scroll_tick;
-                    uint32_t pause_ms = 800;
-                    uint32_t scroll_speed = 20; /* pixels per 100ms */
+                    uint32_t pause_ms = 1200;
+                    uint32_t scroll_speed = 3; /* pixels per 100ms */
                     uint32_t overflow = text_w - max_w;
                     uint32_t scroll_time = (overflow * 100) / scroll_speed;
                     uint32_t cycle = pause_ms + scroll_time + pause_ms;
@@ -2304,12 +2308,12 @@ static void draw_macros(Canvas* canvas, ClaudeRemoteState* state) {
                     } else {
                         offset = overflow;
                     }
-                    canvas_draw_str(canvas, 4 - offset, y, display);
+                    canvas_draw_str(canvas, 3 - offset, y, display);
                 } else {
-                    canvas_draw_str(canvas, 4, y, display);
+                    canvas_draw_str(canvas, 3, y, display);
                 }
             } else {
-                canvas_draw_str(canvas, 4, y, display);
+                canvas_draw_str(canvas, 3, y, display);
             }
 
             if(selected) {
@@ -2317,7 +2321,7 @@ static void draw_macros(Canvas* canvas, ClaudeRemoteState* state) {
             }
         }
 
-        draw_scrollbar(canvas, 125, 15, 62, state->macro_index, state->macro_count);
+        draw_scrollbar(canvas, 62, 18, 125, state->macro_index, state->macro_count);
     }
 }
 
@@ -2493,12 +2497,12 @@ static bool handle_home_input(ClaudeRemoteState* state, InputEvent* event, ViewP
         }
         state->macro_index = 0;
         state->macro_scroll_tick = furi_get_tick();
+        state->macros_from_remote = false;
         state->mode = ModeMacros;
         notification_message(state->notifications, &sequence_backlight_dim);
         if(state->led_enabled) {
             notification_message(state->notifications, &sequence_solid_orange);
         }
-        view_port_set_orientation(vp, ViewPortOrientationHorizontal);
         break;
     case InputKeyBack:
         return false;
@@ -2523,6 +2527,10 @@ static bool handle_remote_input(ClaudeRemoteState* state, InputEvent* event, Vie
             state->hotkeys_page = 0;
             state->hotkeys_tick = furi_get_tick();
             state->dc_pending = false;
+            /* Clear held flags so they don't re-trigger combos on dismiss */
+            state->right_held = false;
+            state->down_held = false;
+            state->left_holding = false;
             return true;
         }
         /* Left+Down combo → open Macros */
@@ -2530,11 +2538,16 @@ static bool handle_remote_input(ClaudeRemoteState* state, InputEvent* event, Vie
             state->combo_tick = furi_get_tick();
             state->dc_pending = false;
             state->left_repeat_tick = 0; /* prevent backspace firing */
+            /* Clear held flags so they don't re-trigger on return */
+            state->left_holding = false;
+            state->down_held = false;
+            state->right_held = false;
             if(!state->macros_loaded) {
                 load_macros_from_sd(state);
             }
             state->macro_index = 0;
             state->macro_scroll_tick = furi_get_tick();
+            state->macros_from_remote = true;
             state->mode = ModeMacros;
             if(state->haptics_enabled) {
                 notification_message(state->notifications, &sequence_single_vibro);
@@ -2584,6 +2597,10 @@ static bool handle_remote_input(ClaudeRemoteState* state, InputEvent* event, Vie
                 state->hotkeys_page = (state->hotkeys_page + 2) % 3;
             } else {
                 state->show_hotkeys = false;
+                /* Clear held flags so stale state doesn't trigger combos */
+                state->right_held = false;
+                state->down_held = false;
+                state->left_holding = false;
             }
         }
         return true;
@@ -2935,7 +2952,15 @@ static bool handle_settings_input(ClaudeRemoteState* state, InputEvent* event, V
 /* ── Macros input handler ── */
 
 static bool handle_macros_input(ClaudeRemoteState* state, InputEvent* event, ViewPort* vp) {
-    if(event->type != InputTypeShort) return true;
+    UNUSED(vp);
+    /* Up/Down: accept Short, Long, and Repeat for hold-to-scroll */
+    if(event->key == InputKeyUp || event->key == InputKeyDown) {
+        if(event->type != InputTypeShort && event->type != InputTypeLong &&
+           event->type != InputTypeRepeat)
+            return true;
+    } else {
+        if(event->type != InputTypeShort) return true;
+    }
 
     switch(event->key) {
     case InputKeyUp:
@@ -2970,12 +2995,19 @@ static bool handle_macros_input(ClaudeRemoteState* state, InputEvent* event, Vie
         }
         break;
     case InputKeyBack:
-        state->mode = ModeHome;
-        notification_message(state->notifications, &sequence_backlight_restore);
-        if(state->led_enabled) {
-            notification_message(state->notifications, &sequence_solid_orange);
+        if(state->macros_from_remote) {
+            state->mode = ModeRemote;
+            notification_message(state->notifications, &sequence_backlight_dim);
+            if(state->led_enabled) {
+                notification_message(state->notifications, &sequence_solid_blue);
+            }
+        } else {
+            state->mode = ModeHome;
+            notification_message(state->notifications, &sequence_backlight_restore);
+            if(state->led_enabled) {
+                notification_message(state->notifications, &sequence_solid_orange);
+            }
         }
-        view_port_set_orientation(vp, ViewPortOrientationVertical);
         break;
     default:
         break;
