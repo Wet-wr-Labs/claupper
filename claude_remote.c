@@ -1290,9 +1290,8 @@ static void flush_pending(ClaudeRemoteState* state) {
     state->dc_pending = false;
     if(!state->hid_connected) return;
 
-    /* Deferred double-click: timeout expired after 2nd click without 3rd */
-    if(state->dc_count == 2) {
-        send_double_action(state, state->dc_key);
+    /* dc_count==2 means double already fired, just waiting for possible triple — discard */
+    if(state->dc_count >= 2) {
         return;
     }
 
@@ -1466,7 +1465,8 @@ static void draw_splash(Canvas* canvas) {
     canvas_draw_line(canvas, 0, 46, 128, 46);
 
     canvas_set_font(canvas, FontSecondary);
-    canvas_draw_str_aligned(canvas, 64, 58, AlignCenter, AlignCenter, "Your AI coding companion");
+    canvas_draw_str_aligned(
+        canvas, 64, 58, AlignCenter, AlignCenter, "Your Agentic CLI Companion");
 }
 
 static void draw_tour(Canvas* canvas, ClaudeRemoteState* state) {
@@ -2684,9 +2684,9 @@ static bool handle_remote_input(ClaudeRemoteState* state, InputEvent* event, Vie
             state->dc_pending = false;
             send_triple_action(state, event->key);
         } else {
-            /* double-click detected — execute immediately */
-            state->dc_pending = false;
+            /* double-click detected — execute immediately, keep pending for triple */
             state->dc_count = 2;
+            state->dc_tick = now;
             send_double_action(state, event->key);
         }
     } else {
