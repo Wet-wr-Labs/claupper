@@ -1,8 +1,10 @@
-# Claupper
+# Agentic Remote
 
-A one-handed Flipper Zero remote for [Claude Code](https://claude.ai/code). Five buttons. No keyboard required.
+A one-handed Flipper Zero remote for [Claude Code](https://claude.ai/code) and AI coding agents. Five buttons. No keyboard required.
 
 Built by [Kasen Sansonetti](https://github.com/w3t-wr3) & [Wetware Labs](https://WetwareOfficial.com).
+
+**Fully dogfooded** — this entire app was built using the remote itself, controlling Claude Code from a Flipper Zero. In the spirit of Claude Code shipping as a CLI tool built with Claude, Agentic Remote was built with Agentic Remote.
 
 ---
 
@@ -23,7 +25,7 @@ Then copy the `.fap` to your Flipper's SD card and you're set.
 
 ## How It Works
 
-Claude Code is a terminal app. Every interaction is: read output, approve or decline, move on. Claupper maps that entire workflow to five buttons.
+Claude Code is a terminal app. Every interaction is: read output, approve or decline, move on. Agentic Remote maps that entire workflow to five buttons.
 
 Press 1 to approve, 2 to decline, 3 for alternatives, OK to confirm. When you need to type, hit Down for voice dictation. When you need to scroll, double-click Up or Down. Double-click OK to Cmd+\` between terminal windows. Need to fire off a `/commit` or a custom prompt? Hold Left+Down to jump into Macros, fully customizable from a text file on the SD card. The whole point is you never touch your keyboard.
 
@@ -108,7 +110,7 @@ Left from Home.
 
 ## Two Builds, One Codebase
 
-| | **Claupper BLE** | **Claupper USB** |
+| | **Agentic Remote BLE** | **Agentic Remote USB** |
 |---|---|---|
 | **File** | `claude_remote_ble.fap` | `claude_remote_usb.fap` |
 | **Firmware** | Momentum or Unleashed | Stock (official) |
@@ -126,7 +128,7 @@ Same C source file, same features — compile-time `#ifdef` switching selects th
 
 1. `npx claupper` (or grab from [Releases](https://github.com/Wet-wr-Labs/claupper/releases))
 2. Copy `claude_remote_ble.fap` to `SD/apps/Bluetooth/`
-3. Open **Apps → Bluetooth → Claupper**
+3. Open **Apps → Bluetooth → Agentic Remote**
 4. Pair via Bluetooth on your computer
 
 ### USB (Stock Firmware)
@@ -134,7 +136,7 @@ Same C source file, same features — compile-time `#ifdef` switching selects th
 1. `npx claupper` (or grab from [Releases](https://github.com/Wet-wr-Labs/claupper/releases))
 2. Copy `claude_remote_usb.fap` to `SD/apps/USB/`
 3. Plug Flipper into your computer
-4. Open **Apps → USB → Claupper USB**
+4. Open **Apps → USB → Agentic Remote USB**
 
 ### First Launch
 
@@ -166,7 +168,7 @@ Removes the Claude Code skill and `~/claupper/` directory. Does not remove `.fap
 
 ## Claude Code Skill (Optional)
 
-The `/claupper` skill activates Claupper Mode in Claude Code:
+The `/claupper` skill activates Agentic Remote Mode in Claude Code:
 
 ```
 1. [What you most likely want — do it]

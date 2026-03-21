@@ -405,7 +405,7 @@ static const ManualSection tools_sections[] = {
      " Search the internet\n\n"
      "AskUserQuestion\n"
      " Multiple choice prompts\n"
-     " (what Claupper uses!)\n\n"
+     " (what Agentic Remote uses!)\n\n"
      "Task tools:\n"
      " TaskCreate, TaskUpdate\n"
      " TaskList, TaskGet\n"
@@ -883,6 +883,7 @@ typedef struct {
     /* combo cooldown — suppress Short events after Left+Down toggle */
     uint32_t combo_tick;
     bool macros_from_remote; /* true if macros opened via Left+Down combo in remote */
+    bool usb_hid_active; /* true if USB HID was initialized on demand (BLE build) */
 } ClaudeRemoteState;
 
 /* ── Utility ── */
@@ -1453,7 +1454,7 @@ static void draw_splash(Canvas* canvas) {
     canvas_clear(canvas);
 
     canvas_set_font(canvas, FontPrimary);
-    canvas_draw_str_aligned(canvas, 64, 6, AlignCenter, AlignCenter, "Claupper");
+    canvas_draw_str_aligned(canvas, 64, 6, AlignCenter, AlignCenter, "Agentic Remote");
 
     /* WETWARE logo bitmap — full 128px width */
     canvas_draw_xbm(canvas, 0, 14, WETWARE_LOGO_W, WETWARE_LOGO_H, wetware_logo);
@@ -1465,7 +1466,7 @@ static void draw_splash(Canvas* canvas) {
     canvas_draw_line(canvas, 0, 46, 128, 46);
 
     canvas_set_font(canvas, FontSecondary);
-    canvas_draw_str_aligned(canvas, 64, 58, AlignCenter, AlignCenter, "Flipper's claudepanion");
+    canvas_draw_str_aligned(canvas, 64, 58, AlignCenter, AlignCenter, "Your AI coding companion");
 }
 
 static void draw_tour(Canvas* canvas, ClaudeRemoteState* state) {
@@ -1475,7 +1476,7 @@ static void draw_tour(Canvas* canvas, ClaudeRemoteState* state) {
         canvas_draw_str_aligned(canvas, 64, 12, AlignCenter, AlignCenter, "Quick Tour?");
         canvas_set_font(canvas, FontSecondary);
         canvas_draw_line(canvas, 0, 18, 128, 18);
-        canvas_draw_str_aligned(canvas, 64, 28, AlignCenter, AlignCenter, "Learn Claupper basics");
+        canvas_draw_str_aligned(canvas, 64, 28, AlignCenter, AlignCenter, "Learn the basics");
         canvas_draw_str_aligned(canvas, 64, 38, AlignCenter, AlignCenter, "in 4 quick pages");
         canvas_draw_rframe(canvas, 18, 44, 7, 7, 0);
         if(state->tour_skip) {
@@ -1543,32 +1544,34 @@ static void draw_home(Canvas* canvas) {
     canvas_draw_rframe(canvas, 0, 0, 64, 128, 3);
 
     canvas_set_font(canvas, FontPrimary);
-    canvas_draw_str_aligned(canvas, 32, 12, AlignCenter, AlignCenter, "Claupper");
-    canvas_draw_line(canvas, 10, 20, 54, 20);
+    canvas_draw_str_aligned(canvas, 32, 9, AlignCenter, AlignCenter, "Agentic");
+    canvas_set_font(canvas, FontSecondary);
+    canvas_draw_str_aligned(canvas, 32, 19, AlignCenter, AlignCenter, "Remote");
+    canvas_draw_line(canvas, 10, 24, 54, 24);
 
     /* Mini D-pad illustration */
-    canvas_draw_frame(canvas, 26, 28, 12, 13);
-    canvas_draw_frame(canvas, 14, 40, 13, 12);
-    canvas_draw_box(canvas, 26, 40, 12, 12);
-    canvas_draw_frame(canvas, 37, 40, 13, 12);
-    canvas_draw_frame(canvas, 26, 51, 12, 13);
+    canvas_draw_frame(canvas, 26, 32, 12, 13);
+    canvas_draw_frame(canvas, 14, 44, 13, 12);
+    canvas_draw_box(canvas, 26, 44, 12, 12);
+    canvas_draw_frame(canvas, 37, 44, 13, 12);
+    canvas_draw_frame(canvas, 26, 55, 12, 13);
 
-    canvas_draw_line(canvas, 32, 31, 29, 35);
-    canvas_draw_line(canvas, 32, 31, 35, 35);
-    canvas_draw_line(canvas, 18, 46, 22, 43);
-    canvas_draw_line(canvas, 18, 46, 22, 49);
-    canvas_draw_line(canvas, 46, 46, 42, 43);
-    canvas_draw_line(canvas, 46, 46, 42, 49);
-    canvas_draw_line(canvas, 32, 61, 29, 57);
-    canvas_draw_line(canvas, 32, 61, 35, 57);
+    canvas_draw_line(canvas, 32, 35, 29, 39);
+    canvas_draw_line(canvas, 32, 35, 35, 39);
+    canvas_draw_line(canvas, 18, 50, 22, 47);
+    canvas_draw_line(canvas, 18, 50, 22, 53);
+    canvas_draw_line(canvas, 46, 50, 42, 47);
+    canvas_draw_line(canvas, 46, 50, 42, 53);
+    canvas_draw_line(canvas, 32, 65, 29, 61);
+    canvas_draw_line(canvas, 32, 65, 35, 61);
 
     canvas_set_color(canvas, ColorWhite);
-    canvas_draw_disc(canvas, 32, 46, 3);
+    canvas_draw_disc(canvas, 32, 50, 3);
     canvas_set_color(canvas, ColorBlack);
 
     canvas_set_font(canvas, FontSecondary);
 
-    /* 5 rows, 10px each, y=74..123 — fits inside rframe */
+    /* 5 rows, 10px each, y=74..119 — fits inside rframe */
 
     /* Up arrow → Macros */
     canvas_draw_frame(canvas, 4, 74, 14, 10);
@@ -1736,11 +1739,10 @@ static void draw_remote(Canvas* canvas, ClaudeRemoteState* state) {
     canvas_set_color(canvas, ColorWhite);
     canvas_set_font(canvas, FontPrimary);
 #ifdef HID_TRANSPORT_BLE
-    canvas_draw_str_aligned(canvas, 27, 8, AlignCenter, AlignCenter, "Claupper");
-    canvas_set_font(canvas, FontSecondary);
-    canvas_draw_str_aligned(canvas, 58, 8, AlignCenter, AlignCenter, state->use_ble ? "BT" : "U");
+    canvas_draw_str_aligned(
+        canvas, 32, 8, AlignCenter, AlignCenter, state->use_ble ? "Remote BT" : "Remote USB");
 #else
-    canvas_draw_str_aligned(canvas, 32, 8, AlignCenter, AlignCenter, "Claupper");
+    canvas_draw_str_aligned(canvas, 32, 8, AlignCenter, AlignCenter, "Remote");
 #endif
     canvas_set_color(canvas, ColorBlack);
 
@@ -1810,16 +1812,16 @@ static void draw_manual_categories(Canvas* canvas, ClaudeRemoteState* state) {
     canvas_clear(canvas);
 
     canvas_set_font(canvas, FontPrimary);
-    canvas_draw_str(canvas, 2, 10, "Claupper Manual");
+    canvas_draw_str(canvas, 2, 10, "Manual");
     canvas_draw_line(canvas, 0, 13, 128, 13);
 
     canvas_set_font(canvas, FontSecondary);
 
-    /* show up to 3 items at a time */
+    /* show up to 4 items at a time */
     uint8_t first_visible = 0;
-    if(state->cat_index > 2) first_visible = state->cat_index - 2;
+    if(state->cat_index > 3) first_visible = state->cat_index - 3;
 
-    for(int i = 0; i < 3; i++) {
+    for(int i = 0; i < 4; i++) {
         uint8_t idx = first_visible + i;
         if(idx >= MENU_ITEM_COUNT) break;
 
@@ -1827,7 +1829,7 @@ static void draw_manual_categories(Canvas* canvas, ClaudeRemoteState* state) {
         bool selected = (idx == state->cat_index);
 
         if(selected) {
-            canvas_draw_box(canvas, 0, y - 9, 128, 12);
+            canvas_draw_box(canvas, 0, y - 9, 122, 12);
             canvas_set_color(canvas, ColorWhite);
         }
 
@@ -1877,7 +1879,7 @@ static void draw_manual_sections(Canvas* canvas, ClaudeRemoteState* state) {
         bool selected = (idx == state->section_index);
 
         if(selected) {
-            canvas_draw_box(canvas, 0, y - 9, 128, 12);
+            canvas_draw_box(canvas, 0, y - 9, 122, 12);
             canvas_set_color(canvas, ColorWhite);
         }
 
@@ -2142,20 +2144,20 @@ static void draw_settings(Canvas* canvas, ClaudeRemoteState* state) {
     canvas_set_font(canvas, FontSecondary);
 
     const char* labels[SETTINGS_COUNT] = {
-        "Haptics",
-        "LED",
         "OS",
-        "Tour",
-        "DblClk",
 #ifdef HID_TRANSPORT_BLE
         "Bluetooth",
 #endif
+        "Haptics",
+        "LED",
+        "Tour",
+        "DblClk",
     };
 
     uint8_t first_visible = 0;
-    if(state->settings_index > 2) first_visible = state->settings_index - 2;
+    if(state->settings_index > 3) first_visible = state->settings_index - 3;
 
-    for(int i = 0; i < 3; i++) {
+    for(int i = 0; i < 4; i++) {
         uint8_t idx = first_visible + i;
         if(idx >= SETTINGS_COUNT) break;
 
@@ -2169,20 +2171,34 @@ static void draw_settings(Canvas* canvas, ClaudeRemoteState* state) {
 
         canvas_draw_str(canvas, 6, y, labels[idx]);
 
+        /* Value display — index depends on whether BLE build includes Bluetooth row */
         const char* val_str;
+#ifdef HID_TRANSPORT_BLE
+        /* 0=OS, 1=Bluetooth, 2=Haptics, 3=LED, 4=Tour, 5=DblClk */
         if(idx == 0)
-            val_str = state->haptics_enabled ? "[ON]" : "[OFF]";
-        else if(idx == 1)
-            val_str = state->led_enabled ? "[ON]" : "[OFF]";
-        else if(idx == 2)
             val_str = state->os_mode == 1 ? "[Win]" : state->os_mode == 2 ? "[Linux]" : "[Mac]";
+        else if(idx == 1)
+            val_str = state->ble_connected ? "[OK]" : "[...]";
+        else if(idx == 2)
+            val_str = state->haptics_enabled ? "[ON]" : "[OFF]";
+        else if(idx == 3)
+            val_str = state->led_enabled ? "[ON]" : "[OFF]";
+        else if(idx == 4)
+            val_str = state->show_tour ? "[ON]" : "[OFF]";
+        else if(idx == 5)
+            val_str = state->dc_speed == 1 ? "[Slow]" : state->dc_speed == 2 ? "[Fast]" : "[Norm]";
+#else
+        /* 0=OS, 1=Haptics, 2=LED, 3=Tour, 4=DblClk */
+        if(idx == 0)
+            val_str = state->os_mode == 1 ? "[Win]" : state->os_mode == 2 ? "[Linux]" : "[Mac]";
+        else if(idx == 1)
+            val_str = state->haptics_enabled ? "[ON]" : "[OFF]";
+        else if(idx == 2)
+            val_str = state->led_enabled ? "[ON]" : "[OFF]";
         else if(idx == 3)
             val_str = state->show_tour ? "[ON]" : "[OFF]";
         else if(idx == 4)
             val_str = state->dc_speed == 1 ? "[Slow]" : state->dc_speed == 2 ? "[Fast]" : "[Norm]";
-#ifdef HID_TRANSPORT_BLE
-        else if(idx == 5)
-            val_str = state->ble_connected ? "[OK]" : "[...]";
 #endif
         else
             val_str = "";
@@ -2449,8 +2465,15 @@ static bool handle_home_input(ClaudeRemoteState* state, InputEvent* event, ViewP
     switch(event->key) {
     case InputKeyOk:
 #ifdef HID_TRANSPORT_BLE
-        state->use_ble = true;
-        state->hid_connected = state->ble_connected;
+        /* OK → USB remote (init USB HID on demand) */
+        state->use_ble = false;
+        if(!state->usb_hid_active) {
+            state->usb_prev = furi_hal_usb_get_config();
+            furi_hal_usb_unlock();
+            furi_hal_usb_set_config(&usb_hid, NULL);
+            state->usb_hid_active = true;
+        }
+        state->hid_connected = true; /* USB is always "connected" */
 #endif
         state->mode = ModeRemote;
         notification_message(state->notifications, &sequence_backlight_dim);
@@ -2460,6 +2483,7 @@ static bool handle_home_input(ClaudeRemoteState* state, InputEvent* event, ViewP
         break;
     case InputKeyRight:
 #ifdef HID_TRANSPORT_BLE
+        /* Right → BT remote */
         state->use_ble = true;
         state->hid_connected = state->ble_connected;
         state->mode = ModeRemote;
@@ -2917,21 +2941,34 @@ static bool handle_settings_input(ClaudeRemoteState* state, InputEvent* event, V
         if(state->settings_index < SETTINGS_COUNT - 1) state->settings_index++;
         break;
     case InputKeyOk:
+#ifdef HID_TRANSPORT_BLE
+        /* 0=OS, 1=Bluetooth, 2=Haptics, 3=LED, 4=Tour, 5=DblClk */
         if(state->settings_index == 0) {
-            state->haptics_enabled = !state->haptics_enabled;
-        } else if(state->settings_index == 1) {
-            state->led_enabled = !state->led_enabled;
-        } else if(state->settings_index == 2) {
             state->os_mode = (state->os_mode + 1) % 3;
+        } else if(state->settings_index == 1) {
+            state->bt_pair_screen = true;
+            return true; /* don't save settings for this */
+        } else if(state->settings_index == 2) {
+            state->haptics_enabled = !state->haptics_enabled;
+        } else if(state->settings_index == 3) {
+            state->led_enabled = !state->led_enabled;
+        } else if(state->settings_index == 4) {
+            state->show_tour = !state->show_tour;
+        } else if(state->settings_index == 5) {
+            state->dc_speed = (state->dc_speed + 1) % 3;
+        }
+#else
+        /* 0=OS, 1=Haptics, 2=LED, 3=Tour, 4=DblClk */
+        if(state->settings_index == 0) {
+            state->os_mode = (state->os_mode + 1) % 3;
+        } else if(state->settings_index == 1) {
+            state->haptics_enabled = !state->haptics_enabled;
+        } else if(state->settings_index == 2) {
+            state->led_enabled = !state->led_enabled;
         } else if(state->settings_index == 3) {
             state->show_tour = !state->show_tour;
         } else if(state->settings_index == 4) {
             state->dc_speed = (state->dc_speed + 1) % 3;
-        }
-#ifdef HID_TRANSPORT_BLE
-        else if(state->settings_index == 5) {
-            state->bt_pair_screen = true;
-            return true; /* don't save settings for this */
         }
 #endif
         save_settings(state);
@@ -3021,7 +3058,7 @@ static bool handle_macros_input(ClaudeRemoteState* state, InputEvent* event, Vie
 
 static int32_t claude_remote_main(void* p) {
     UNUSED(p);
-    FURI_LOG_I(TAG, "Starting Claupper");
+    FURI_LOG_I(TAG, "Starting Agentic Remote");
 
     ClaudeRemoteState* state = malloc(sizeof(ClaudeRemoteState));
     memset(state, 0, sizeof(ClaudeRemoteState));
@@ -3047,10 +3084,12 @@ static int32_t claude_remote_main(void* p) {
     Gui* gui = furi_record_open(RECORD_GUI);
     gui_add_view_port(gui, view_port, GuiLayerFullscreen);
 
-    /* Init USB HID (both builds) */
+    /* Init USB HID — only for USB build; BLE build keeps serial port free */
+#ifdef HID_TRANSPORT_USB
     state->usb_prev = furi_hal_usb_get_config();
     furi_hal_usb_unlock();
     furi_hal_usb_set_config(&usb_hid, NULL);
+#endif
 
 #ifdef HID_TRANSPORT_BLE
     /* Init BLE HID with per-app key storage for bonding persistence */
@@ -3149,17 +3188,24 @@ static int32_t claude_remote_main(void* p) {
         view_port_update(view_port);
     }
 
-    FURI_LOG_I(TAG, "Exiting Claupper");
+    FURI_LOG_I(TAG, "Exiting Agentic Remote");
 
     notification_message(state->notifications, &sequence_reset_rgb);
     furi_record_close(RECORD_NOTIFICATION);
 
-    /* Cleanup USB HID (both builds) */
+    /* Cleanup USB HID */
+#ifdef HID_TRANSPORT_USB
     furi_hal_hid_kb_release_all();
     furi_hal_usb_set_config(state->usb_prev, NULL);
+#endif
 
 #ifdef HID_TRANSPORT_BLE
-    /* Also cleanup BLE HID */
+    /* Restore USB if it was activated on demand */
+    if(state->usb_hid_active) {
+        furi_hal_hid_kb_release_all();
+        furi_hal_usb_set_config(state->usb_prev, NULL);
+    }
+    /* Cleanup BLE HID */
     bt_set_status_changed_callback(state->bt, NULL, NULL);
     ble_profile_hid_kb_release_all(state->ble_profile);
     bt_profile_restore_default(state->bt); /* saves bonding keys to our app path */
