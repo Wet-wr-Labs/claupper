@@ -4,7 +4,7 @@ sourcecode:
     origin: https://github.com/Wet-wr-Labs/claupper.git
     commit_sha: e6415097a25b9b42c2a103d64ef40ada2c41b365
 short_description: One-handed remote for AI coding agents (Claude Code). D-pad control, macros, offline manual + quiz.
-description: "@README.md"
+description: "@catalog_description.md"
 changelog: "@changelog.md"
 id: claude_remote_usb
 screenshots:
