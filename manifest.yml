@@ -8,6 +8,7 @@ description: "@catalog_description.md"
 changelog: "@changelog.md"
 id: claude_remote_usb
 screenshots:
+  - screenshots/ss_splash.png
   - screenshots/ss_manual.png
   - screenshots/ss_manual2.png
   - screenshots/ss_settings.png
