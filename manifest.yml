@@ -6,9 +6,8 @@ sourcecode:
 short_description: One-handed remote for AI coding agents (Claude Code). D-pad control, macros, offline manual + quiz.
 description: "@README.md"
 changelog: "@changelog.md"
+id: claude_remote_usb
 screenshots:
-  - screenshots/ss_home.png
-  - screenshots/ss_remote.png
-  - screenshots/ss_macros.png
   - screenshots/ss_manual.png
+  - screenshots/ss_manual2.png
   - screenshots/ss_settings.png
