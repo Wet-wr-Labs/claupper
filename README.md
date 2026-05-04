@@ -10,21 +10,24 @@ Built by [Kasen Sansonetti](https://github.com/w3t-wr3) & [Wetware Labs](https:/
 
 ## Install
 
-Most Flipper users install the app directly from the **[Flipper App Catalog](https://lab.flipper.net/apps)** via qFlipper or the Flipper mobile app — no npm needed. The catalog handles the `.fap` deployment to your SD card automatically.
+### The Flipper app
 
-If you also want the optional `/claupper` Claude Code skill and editable macro presets on your computer, run:
+Install from the **[Flipper App Catalog](https://lab.flipper.net/apps)** via qFlipper or the Flipper mobile app. The catalog handles deploying the `.fap` to your SD card. You can also grab the `.fap` directly from the [Releases](https://github.com/Wet-wr-Labs/claupper/releases) page.
+
+### The Claude Code skill (optional)
+
+If you want the `/claupper` skill and editable macro presets on your computer:
 
 ```bash
 npx github:Wet-wr-Labs/claupper
 ```
 
-This is a local-only helper script that copies three things to your home directory; nothing else is downloaded, and your Flipper is not touched:
+This is a local-only helper script. It copies two things to your home directory; nothing else is downloaded, and your Flipper is not touched:
 
 1. **Claude Code skill** → `~/.claude/skills/claupper/SKILL.md` (registers the `/claupper` command)
-2. **Flipper apps** → `~/claupper/claude_remote_ble.fap` and `claude_remote_usb.fap` (only useful if you didn't install via the catalog and need to copy them manually)
-3. **Macro presets** → `~/claupper/macros/*.txt` (7 editable text files)
+2. **Macro presets** → `~/claupper/macros/*.txt` (7 editable text files you can copy to your Flipper SD card)
 
-The script does not flash the Flipper, compile from source, or install Momentum/Unleashed firmware.
+The script does not flash the Flipper, compile from source, install firmware, or download the `.fap` (use the catalog or Releases for that).
 
 ---
 

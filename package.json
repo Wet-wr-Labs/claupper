@@ -8,8 +8,7 @@
   "files": [
     "bin/",
     "skill/",
-    "dist/*.fap",
-    "macros/*.txt"
+    "macros/"
   ],
   "keywords": [
     "claude",
