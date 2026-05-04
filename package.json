@@ -1,6 +1,6 @@
 {
   "name": "claupper",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "One-command setup for Claupper — a Flipper Zero remote for Claude Code",
   "bin": {
     "claupper": "./bin/claupper.js"
@@ -8,8 +8,8 @@
   "files": [
     "bin/",
     "skill/",
-    "faps/",
-    "macros/"
+    "dist/*.fap",
+    "macros/*.txt"
   ],
   "keywords": [
     "claude",
@@ -23,5 +23,9 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/Wet-wr-Labs/claupper"
+  },
+  "homepage": "https://github.com/Wet-wr-Labs/claupper#readme",
+  "bugs": {
+    "url": "https://github.com/Wet-wr-Labs/claupper/issues"
   }
 }
