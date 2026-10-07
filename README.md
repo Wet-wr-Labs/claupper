@@ -74,6 +74,8 @@ Up from Home, or Left+Down from Remote. Up to 24 custom text macros loaded from 
 - **Text macros** — typed character-by-character (e.g., `/commit`, `Run the tests`)
 - **Combo macros** — modifier key combos (e.g., `!Ctrl+C`, `!Cmd+K`)
 
+End a macro with `{enter}` (e.g., `/compact{enter}`) and it presses Enter after typing, so one OK press runs it.
+
 **7 preset packs** included:
 
 | File | Style |

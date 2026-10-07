@@ -1187,6 +1187,19 @@ static void send_macro_string(ClaudeRemoteState* state, const char* str) {
     }
 }
 
+/* A macro ending in {enter} presses Enter after it is typed. */
+#define MACRO_ENTER_TOKEN "{enter}"
+
+static bool macro_strip_enter(char* s) {
+    size_t len = strlen(s);
+    size_t tlen = strlen(MACRO_ENTER_TOKEN);
+    if(len >= tlen && strcmp(s + len - tlen, MACRO_ENTER_TOKEN) == 0) {
+        s[len - tlen] = '\0';
+        return true;
+    }
+    return false;
+}
+
 /* ── Macro loader from SD ── */
 
 static const char* const default_macros_text =
@@ -2296,7 +2309,10 @@ static void draw_macros(Canvas* canvas, ClaudeRemoteState* state) {
             }
 
             char display[MACRO_MAX_LEN + 8];
-            const char* label = state->macros[idx];
+            char label_buf[MACRO_MAX_LEN + 1];
+            memcpy(label_buf, state->macros[idx], sizeof(label_buf));
+            macro_strip_enter(label_buf);
+            const char* label = label_buf;
             if(strcmp(label, "{update}") == 0) {
                 label = (state->os_mode == 0) ? "brew upgrade claude-code" :
                                                 "npm update -g claude-code";
@@ -3018,6 +3034,7 @@ static bool handle_macros_input(ClaudeRemoteState* state, InputEvent* event, Vie
             char macro_buf[MACRO_MAX_LEN + 1];
             memcpy(macro_buf, state->macros[state->macro_index], sizeof(macro_buf));
             furi_mutex_release(state->mutex);
+            bool press_enter = macro_strip_enter(macro_buf);
             /* Smart macros: expand tokens based on settings */
             if(strcmp(macro_buf, "{update}") == 0) {
                 if(state->os_mode == 0) {
@@ -3027,6 +3044,10 @@ static bool handle_macros_input(ClaudeRemoteState* state, InputEvent* event, Vie
                 }
             } else {
                 send_macro_string(state, macro_buf);
+            }
+            if(press_enter) {
+                furi_delay_ms(100); /* let the terminal take the typed text first */
+                SEND_HID(state, HID_KEYBOARD_RETURN);
             }
             furi_mutex_acquire(state->mutex, FuriWaitForever);
         }
