@@ -69,7 +69,7 @@ The main mode. Screen dims to save battery — stays visible but won't go black.
 
 ### Macros
 
-Up from Home, or Left+Down from Remote. Up to 24 custom text macros loaded from SD card. Hold Up/Down to scroll continuously. Two types:
+Up from Home, or Left+Down from Remote. Up to 64 custom text macros loaded from SD card, nine to a page: Up/Down move one (hold to scroll), Left/Right flip a page, and the header shows where you are (Macros 2/3). Two types:
 
 - **Text macros** — typed character-by-character (e.g., `/commit`, `Run the tests`)
 - **Combo macros** — modifier key combos (e.g., `!Ctrl+C`, `!Cmd+K`)

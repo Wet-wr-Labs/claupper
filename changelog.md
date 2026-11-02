@@ -1,3 +1,8 @@
+## v0.29
+- Macros: up to 64 (was 24), nine to a page; Left/Right flip pages, header shows Macros 2/3
+- Macros list read on the heap, not the 4 KB task stack
+- Macros ending in {enter} press Enter after typing (from the ble-macro-enter build)
+
 ## v0.28
 - Rename from Claupper to Agentic Remote (trademark-safe)
 - BLE build: OK → USB remote, Right → BT remote

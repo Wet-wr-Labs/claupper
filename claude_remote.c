@@ -624,8 +624,10 @@ static const ManualCategory categories[] = {
 #define SETTINGS_COUNT 5
 #endif
 
-#define MACRO_MAX_COUNT 24
+#define MACRO_MAX_COUNT 64
 #define MACRO_MAX_LEN   96
+#define MACRO_PAGE_ROWS 9 /* rows that fit the portrait list; Left/Right move by this */
+#define MACRO_FILE_MAX  (MACRO_MAX_COUNT * (MACRO_MAX_LEN + 2))
 #define MACROS_PATH     APP_DATA_PATH("macros.txt")
 
 /* ── Quiz cards ── */
@@ -1268,10 +1270,11 @@ static void load_macros_from_sd(ClaudeRemoteState* state) {
     Storage* storage = furi_record_open(RECORD_STORAGE);
     File* file = storage_file_alloc(storage);
 
+    /* 64 lines of 96 characters is too big for the 4 KB task stack: read the file on the heap. */
+    char* buf = malloc(MACRO_FILE_MAX);
     bool loaded = false;
     if(storage_file_open(file, MACROS_PATH, FSAM_READ, FSOM_OPEN_EXISTING)) {
-        char buf[2048];
-        uint16_t bytes_read = storage_file_read(file, buf, sizeof(buf) - 1);
+        uint16_t bytes_read = storage_file_read(file, buf, MACRO_FILE_MAX - 1);
         buf[bytes_read] = '\0';
         storage_file_close(file);
 
@@ -1287,11 +1290,11 @@ static void load_macros_from_sd(ClaudeRemoteState* state) {
     /* Write defaults if file was missing or empty */
     if(!loaded) {
         write_default_macros(storage);
-        char buf[2048];
-        strncpy(buf, default_macros_text, sizeof(buf) - 1);
-        buf[sizeof(buf) - 1] = '\0';
+        strncpy(buf, default_macros_text, MACRO_FILE_MAX - 1);
+        buf[MACRO_FILE_MAX - 1] = '\0';
         parse_macros_buf(state, buf);
     }
+    free(buf);
 
     furi_record_close(RECORD_STORAGE);
 }
@@ -2281,7 +2284,15 @@ static void draw_macros(Canvas* canvas, ClaudeRemoteState* state) {
     canvas_clear(canvas);
 
     canvas_set_font(canvas, FontPrimary);
-    canvas_draw_str_aligned(canvas, 32, 8, AlignCenter, AlignCenter, "Macros");
+    /* "Macros 2/3" once the list runs past one page */
+    char title[20];
+    uint8_t pages = (state->macro_count + MACRO_PAGE_ROWS - 1) / MACRO_PAGE_ROWS;
+    if(pages > 1) {
+        snprintf(title, sizeof(title), "Macros %d/%d", state->macro_index / MACRO_PAGE_ROWS + 1, pages);
+    } else {
+        snprintf(title, sizeof(title), "Macros");
+    }
+    canvas_draw_str_aligned(canvas, 32, 8, AlignCenter, AlignCenter, title);
     canvas_draw_line(canvas, 4, 15, 60, 15);
 
     canvas_set_font(canvas, FontSecondary);
@@ -2291,10 +2302,10 @@ static void draw_macros(Canvas* canvas, ClaudeRemoteState* state) {
         canvas_draw_str_aligned(canvas, 32, 60, AlignCenter, AlignCenter, "Add lines to");
         canvas_draw_str_aligned(canvas, 32, 72, AlignCenter, AlignCenter, "macros.txt on SD");
     } else {
-        uint8_t visible_count = 9;
-        uint8_t first_visible = 0;
-        if(state->macro_index >= visible_count)
-            first_visible = state->macro_index - (visible_count - 1);
+        /* Fixed pages of MACRO_PAGE_ROWS: Left/Right flip a page, Up/Down move within it,
+         * so a list of 60 is six presses away, not sixty. */
+        uint8_t visible_count = MACRO_PAGE_ROWS;
+        uint8_t first_visible = (state->macro_index / visible_count) * visible_count;
 
         for(int i = 0; i < visible_count; i++) {
             uint8_t idx = first_visible + i;
@@ -3025,6 +3036,26 @@ static bool handle_macros_input(ClaudeRemoteState* state, InputEvent* event, Vie
     case InputKeyDown:
         if(state->macro_count > 0 && state->macro_index < state->macro_count - 1) {
             state->macro_index++;
+            state->macro_scroll_tick = furi_get_tick();
+        }
+        break;
+    case InputKeyLeft:
+        /* Previous page, same row; from the first page, jump to the top. */
+        if(state->macro_index >= MACRO_PAGE_ROWS) {
+            state->macro_index -= MACRO_PAGE_ROWS;
+        } else {
+            state->macro_index = 0;
+        }
+        state->macro_scroll_tick = furi_get_tick();
+        break;
+    case InputKeyRight:
+        /* Next page, same row; from the last page, jump to the end. */
+        if(state->macro_count > 0) {
+            if(state->macro_index + MACRO_PAGE_ROWS < state->macro_count) {
+                state->macro_index += MACRO_PAGE_ROWS;
+            } else {
+                state->macro_index = state->macro_count - 1;
+            }
             state->macro_scroll_tick = furi_get_tick();
         }
         break;
